@@ -1,0 +1,10 @@
+package com.example.catalogoproductos.model
+
+data class Producto(
+    val id: Int,
+    val nombre: String,
+    val descripcion: String?,
+    val precio: Int,
+    val imagen: String?,
+    val stock: Int = 0
+)

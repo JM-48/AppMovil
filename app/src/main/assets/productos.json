@@ -1,0 +1,34 @@
+[
+  {
+    "id": 1,
+    "nombre": "Laptop Lenovo",
+    "descripcion": "Laptop 14\" - 8GB RAM - 256GB SSD",
+    "precio": 799990,
+    "imagen": "https://p3-ofp.static.pub//fes/cms/2024/04/29/ikn2t6lun9udtvltruq2e6lp6yb30g570931.png",
+    "stock": 15
+  },
+  {
+    "id": 2,
+    "nombre": "Mouse Logitech",
+    "descripcion": "Mouse inalámbrico, sensor 1600 DPI",
+    "precio": 25550,
+    "imagen": "https://cdnx.jumpseller.com/smart-tech/image/18848391/D_NQ_NP_2X_798029-MLA45377518559_032021-F.webp?1714699718",
+    "stock": 120
+  },
+  {
+    "id": 3,
+    "nombre": "Auriculares",
+    "descripcion": "Auriculares Bluetooth con cancelación de ruido",
+    "precio": 59990,
+    "imagen": "https://media.spdigital.cl/thumbnails/products/53_teu5s_b63b51ea_thumbnail_512.png",
+    "stock": 60
+  },
+  {
+    "id": 4,
+    "nombre": "Teclado mecánico",
+    "descripcion": "Teclado compacto, switches azules",
+    "precio": 39000,
+    "imagen": "https://m.media-amazon.com/images/I/71FSIp+tDNL._AC_SL1500_.jpg",
+    "stock": 35
+  }
+]
