@@ -24,19 +24,9 @@ import com.example.catalogoproductos.viewmodel.RegisterViewModel
 @Composable
 fun RegisterScreen(
     navController: NavController,
-    registerViewModel: RegisterViewModel = viewModel()
+    registerViewModel: RegisterViewModel
 ) {
-    val registrationResult by registerViewModel.registrationResult.collectAsState()
     val scrollState = rememberScrollState()
-    
-    LaunchedEffect(registrationResult) {
-        if (registrationResult is RegisterViewModel.RegistrationResult.Success) {
-            navController.navigate("login") {
-                popUpTo("register") { inclusive = true }
-            }
-            registerViewModel.resetRegistrationResult()
-        }
-    }
 
     Scaffold(
         topBar = {
@@ -73,6 +63,28 @@ fun RegisterScreen(
                 singleLine = true
             )
             registerViewModel.nombreError?.let {
+                Text(
+                    text = it,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.align(Alignment.Start)
+                )
+            }
+
+            // Apellido
+            OutlinedTextField(
+                value = registerViewModel.apellido,
+                onValueChange = { registerViewModel.updateApellido(it) },
+                label = { Text("Apellido") },
+                modifier = Modifier.fillMaxWidth(),
+                isError = registerViewModel.apellidoError != null,
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Text,
+                    imeAction = ImeAction.Next
+                ),
+                singleLine = true
+            )
+            registerViewModel.apellidoError?.let {
                 Text(
                     text = it,
                     color = MaterialTheme.colorScheme.error,
@@ -120,6 +132,119 @@ fun RegisterScreen(
                 Text(
                     text = it,
                     color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.align(Alignment.Start)
+                )
+            }
+
+            // Teléfono
+            OutlinedTextField(
+                value = registerViewModel.telefono,
+                onValueChange = { registerViewModel.updateTelefono(it) },
+                label = { Text("Teléfono") },
+                modifier = Modifier.fillMaxWidth(),
+                isError = registerViewModel.telefonoError != null,
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Phone,
+                    imeAction = ImeAction.Next
+                ),
+                singleLine = true
+            )
+            registerViewModel.telefonoError?.let {
+                Text(
+                    text = it,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.align(Alignment.Start)
+                )
+            }
+
+            // Región
+            var expandedRegion by remember { mutableStateOf(false) }
+            val regiones = remember { registerViewModel.regionesYComunas.map { it.region }.filter { it.isNotBlank() } }
+            ExposedDropdownMenuBox(
+                expanded = expandedRegion,
+                onExpandedChange = { expandedRegion = !expandedRegion }
+            ) {
+                OutlinedTextField(
+                    value = registerViewModel.region,
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("Región") },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedRegion) },
+                    isError = registerViewModel.regionError != null,
+                    modifier = Modifier.menuAnchor().fillMaxWidth()
+                )
+                ExposedDropdownMenu(
+                    expanded = expandedRegion,
+                    onDismissRequest = { expandedRegion = false }
+                ) {
+                    regiones.forEach { region ->
+                        DropdownMenuItem(
+                            text = { Text(region) },
+                            onClick = {
+                                registerViewModel.updateRegion(region)
+                                expandedRegion = false
+                            }
+                        )
+                    }
+                }
+            }
+            registerViewModel.regionError?.let {
+                Text(
+                    text = it,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.align(Alignment.Start)
+                )
+            }
+
+            // Comuna
+            var expandedComuna by remember { mutableStateOf(false) }
+            val comunas = remember(registerViewModel.region) {
+                registerViewModel.regionesYComunas.firstOrNull { it.region == registerViewModel.region }?.comunas?.filter { it.isNotBlank() } ?: emptyList()
+            }
+            ExposedDropdownMenuBox(
+                expanded = expandedComuna,
+                onExpandedChange = { if (comunas.isNotEmpty()) expandedComuna = !expandedComuna }
+            ) {
+                OutlinedTextField(
+                    value = registerViewModel.comuna,
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("Comuna") },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedComuna) },
+                    isError = registerViewModel.comunaError != null,
+                    enabled = comunas.isNotEmpty(),
+                    modifier = Modifier.menuAnchor().fillMaxWidth()
+                )
+                ExposedDropdownMenu(
+                    expanded = expandedComuna,
+                    onDismissRequest = { expandedComuna = false }
+                ) {
+                    comunas.forEach { c ->
+                        DropdownMenuItem(
+                            text = { Text(c) },
+                            onClick = {
+                                registerViewModel.updateComuna(c)
+                                expandedComuna = false
+                            }
+                        )
+                    }
+                }
+            } // Cierre faltante de ExposedDropdownMenuBox
+            registerViewModel.comunaError?.let {
+                Text(
+                    text = it,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.align(Alignment.Start)
+                )
+            }
+            if (registerViewModel.region.isNotBlank() && comunas.isEmpty()) {
+                Text(
+                    text = "No hay comunas disponibles para la región seleccionada",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     style = MaterialTheme.typography.bodySmall,
                     modifier = Modifier.align(Alignment.Start)
                 )
@@ -193,19 +318,18 @@ fun RegisterScreen(
                 )
             }
 
-            // Mensaje de error general
-            if (registrationResult is RegisterViewModel.RegistrationResult.Error) {
-                Text(
-                    text = (registrationResult as RegisterViewModel.RegistrationResult.Error).message,
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.align(Alignment.CenterHorizontally)
-                )
-            }
-
             // Botón de registro
             Button(
-                onClick = { registerViewModel.register() },
+                onClick = {
+                    val ok = registerViewModel.register()
+                    if (ok) {
+                        navController.navigate("login") {
+                            popUpTo(navController.graph.startDestinationId) { inclusive = true }
+                            launchSingleTop = true
+                            restoreState = false
+                        }
+                    }
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(50.dp),
@@ -214,15 +338,18 @@ fun RegisterScreen(
                 Text("Registrarse", color = Color.White)
             }
 
-            // Enlace para ir a login
-            TextButton(
-                onClick = {
-                    navController.navigate("login") {
-                        popUpTo("register") { inclusive = true }
-                    }
-                },
-                modifier = Modifier.align(Alignment.CenterHorizontally)
-            ) {
+            // Enlace para ir a login (eliminado por duplicado y confusión)
+
+
+            Spacer(modifier = Modifier.height(10.dp))
+            
+            TextButton(onClick = {
+                navController.navigate("login") {
+                    popUpTo(navController.graph.startDestinationId) { inclusive = true }
+                    launchSingleTop = true
+                    restoreState = false
+                }
+            }) {
                 Text("¿Ya tienes una cuenta? Inicia sesión")
             }
             

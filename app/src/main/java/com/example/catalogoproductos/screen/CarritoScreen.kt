@@ -169,20 +169,12 @@ fun CarritoScreen(
                                 onIncrement = { 
                                     scope.launch {
                                         carritoViewModel.actualizarCantidad(item.id, item.cantidad + 1)
-                                        snackbarHostState.showSnackbar(
-                                            message = "Cantidad actualizada",
-                                            duration = SnackbarDuration.Short
-                                        )
                                     }
                                 },
                                 onDecrement = { 
                                     if (item.cantidad > 1) {
                                         scope.launch {
                                             carritoViewModel.actualizarCantidad(item.id, item.cantidad - 1)
-                                            snackbarHostState.showSnackbar(
-                                                message = "Cantidad actualizada",
-                                                duration = SnackbarDuration.Short
-                                            )
                                         }
                                     }
                                 },
@@ -373,6 +365,12 @@ fun ItemCarritoCard(
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.primary
                 )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "Subtotal: " + com.example.catalogoproductos.util.CurrencyUtils.formatCLP(item.precio * item.cantidad),
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.Medium
+                )
             }
             
             // Controles de cantidad
@@ -380,8 +378,12 @@ fun ItemCarritoCard(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                TextButton(onClick = onDecrement) {
-                    Text("Menos")
+                IconButton(onClick = onDecrement) {
+                    Icon(
+                        Icons.Default.Remove,
+                        contentDescription = "Disminuir cantidad",
+                        modifier = Modifier.size(22.dp)
+                    )
                 }
                 
                 Text(
@@ -390,12 +392,20 @@ fun ItemCarritoCard(
                     fontWeight = FontWeight.Bold
                 )
                 
-                TextButton(onClick = onIncrement) {
-                    Text("Más")
+                IconButton(onClick = onIncrement) {
+                    Icon(
+                        Icons.Default.Add,
+                        contentDescription = "Aumentar cantidad",
+                        modifier = Modifier.size(22.dp)
+                    )
                 }
                 
-                TextButton(onClick = onDelete) {
-                    Text("Eliminar")
+                IconButton(onClick = onDelete) {
+                    Icon(
+                        Icons.Default.Delete,
+                        contentDescription = "Eliminar producto",
+                        modifier = Modifier.size(22.dp)
+                    )
                 }
             }
         }

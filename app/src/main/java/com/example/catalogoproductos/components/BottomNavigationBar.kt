@@ -49,7 +49,7 @@ fun BottomNavigationBar(
 
     val items = if (isAdmin) {
         baseItems + BottomNavItem(
-            name = "BackOffice",
+            name = "Admin",
             route = "backoffice",
             icon = Icons.Default.Work
         )

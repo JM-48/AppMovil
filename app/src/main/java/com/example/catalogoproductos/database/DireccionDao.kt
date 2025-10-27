@@ -20,4 +20,16 @@ interface DireccionDao {
 
     @Delete
     suspend fun deleteDireccion(direccion: Direccion)
+
+    @Query("UPDATE direcciones SET esDefault = 0 WHERE emailUsuario = :email")
+    suspend fun clearDefaultByUsuario(email: String)
+
+    @Query("SELECT * FROM direcciones WHERE emailUsuario = :email AND esDefault = 1 LIMIT 1")
+    suspend fun getDireccionDefaultOnceByUsuario(email: String): Direccion?
+
+    @Transaction
+    suspend fun insertDireccionAsDefault(email: String, direccion: Direccion): Long {
+        clearDefaultByUsuario(email)
+        return insertDireccion(direccion)
+    }
 }

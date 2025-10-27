@@ -20,6 +20,11 @@ import com.example.catalogoproductos.model.Direccion
 import com.example.catalogoproductos.viewmodel.AuthViewModel
 import com.example.catalogoproductos.viewmodel.DireccionViewModel
 
+import androidx.compose.ui.platform.LocalContext
+import com.example.catalogoproductos.repository.RegionComunaRepository
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DireccionScreen(
@@ -30,6 +35,35 @@ fun DireccionScreen(
     val currentUserEmail = authViewModel.usuarioActual.value
     val scrollState = rememberScrollState()
     val guardadoExitoso by direccionViewModel.guardadoExitoso.collectAsState()
+    // Región/Comuna state
+    val context = LocalContext.current
+    // Eliminado RegionComunaRepository(context); usamos el método estático
+    val regionesYComunas = remember { RegionComunaRepository().cargarDesdeAssets(context) }
+    var expandedRegion by remember { mutableStateOf(false) }
+    var expandedComuna by remember { mutableStateOf(false) }
+    var selectedRegion by remember { mutableStateOf("") }
+
+    val regiones = remember(regionesYComunas) {
+        regionesYComunas.map { it.region }.filter { it.isNotBlank() }
+    }
+    val comunasDisponibles = remember(selectedRegion) {
+        regionesYComunas.firstOrNull { it.region == selectedRegion }?.comunas?.filter { it.isNotBlank() } ?: emptyList()
+    }
+
+    LaunchedEffect(regionesYComunas, direccionViewModel.ciudad, direccionViewModel.provincia) {
+        if (selectedRegion.isBlank()) {
+            val fromCiudad = regionesYComunas.firstOrNull { it.comunas.contains(direccionViewModel.ciudad) }?.region
+            if (fromCiudad != null) {
+                selectedRegion = fromCiudad
+                direccionViewModel.updateProvincia(fromCiudad)
+            } else if (direccionViewModel.provincia.isNotBlank()) {
+                val exists = regionesYComunas.any { it.region == direccionViewModel.provincia }
+                if (exists) {
+                    selectedRegion = direccionViewModel.provincia
+                }
+            }
+        }
+    }
     
     LaunchedEffect(guardadoExitoso) {
         if (guardadoExitoso) {
@@ -105,21 +139,42 @@ fun DireccionScreen(
                 )
             }
 
-            // Ciudad
-            OutlinedTextField(
-                value = direccionViewModel.ciudad,
-                onValueChange = { direccionViewModel.updateCiudad(it) },
-                label = { Text("Ciudad") },
-                modifier = Modifier.fillMaxWidth(),
-                isError = direccionViewModel.ciudadError != null,
-
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Text,
-                    imeAction = ImeAction.Next
-                ),
-                singleLine = true
-            )
-            direccionViewModel.ciudadError?.let {
+            // Región (reemplaza Provincia)
+            ExposedDropdownMenuBox(
+                expanded = expandedRegion,
+                onExpandedChange = { expandedRegion = !expandedRegion },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                OutlinedTextField(
+                    value = selectedRegion,
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("Región") },
+                    modifier = Modifier
+                        .menuAnchor()
+                        .fillMaxWidth(),
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedRegion) },
+                    isError = direccionViewModel.provinciaError != null,
+                    singleLine = true
+                )
+                ExposedDropdownMenu(
+                    expanded = expandedRegion,
+                    onDismissRequest = { expandedRegion = false }
+                ) {
+                    regiones.forEach { region ->
+                        DropdownMenuItem(
+                            text = { Text(region) },
+                            onClick = {
+                                selectedRegion = region
+                                direccionViewModel.updateProvincia(region)
+                                direccionViewModel.updateCiudad("")
+                                expandedRegion = false
+                            }
+                        )
+                    }
+                }
+            }
+            direccionViewModel.provinciaError?.let {
                 Text(
                     text = it,
                     color = MaterialTheme.colorScheme.error,
@@ -128,24 +183,52 @@ fun DireccionScreen(
                 )
             }
 
-            // Provincia
-            OutlinedTextField(
-                value = direccionViewModel.provincia,
-                onValueChange = { direccionViewModel.updateProvincia(it) },
-                label = { Text("Provincia") },
-                modifier = Modifier.fillMaxWidth(),
-                isError = direccionViewModel.provinciaError != null,
-
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Text,
-                    imeAction = ImeAction.Next
-                ),
-                singleLine = true
-            )
-            direccionViewModel.provinciaError?.let {
+            // Comuna (reemplaza Ciudad)
+            ExposedDropdownMenuBox(
+                expanded = expandedComuna,
+                onExpandedChange = { if (comunasDisponibles.isNotEmpty()) expandedComuna = !expandedComuna },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                OutlinedTextField(
+                    value = direccionViewModel.ciudad,
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("Comuna") },
+                    modifier = Modifier
+                        .menuAnchor()
+                        .fillMaxWidth(),
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedComuna) },
+                    isError = direccionViewModel.ciudadError != null,
+                    enabled = comunasDisponibles.isNotEmpty(),
+                    singleLine = true
+                )
+                ExposedDropdownMenu(
+                    expanded = expandedComuna,
+                    onDismissRequest = { expandedComuna = false }
+                ) {
+                    comunasDisponibles.forEach { comuna ->
+                        DropdownMenuItem(
+                            text = { Text(comuna) },
+                            onClick = {
+                                direccionViewModel.updateCiudad(comuna)
+                                expandedComuna = false
+                            }
+                        )
+                    }
+                }
+            }
+            direccionViewModel.ciudadError?.let {
                 Text(
                     text = it,
                     color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.align(Alignment.Start)
+                )
+            }
+            if (selectedRegion.isNotBlank() && comunasDisponibles.isEmpty()) {
+                Text(
+                    text = "No hay comunas disponibles para la región seleccionada",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     style = MaterialTheme.typography.bodySmall,
                     modifier = Modifier.align(Alignment.Start)
                 )

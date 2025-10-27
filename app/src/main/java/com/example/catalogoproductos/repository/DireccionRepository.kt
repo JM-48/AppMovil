@@ -25,4 +25,16 @@ class DireccionRepository(private val direccionDao: DireccionDao) {
     suspend fun eliminarDireccion(direccion: Direccion) {
         direccionDao.deleteDireccion(direccion)
     }
+
+    suspend fun clearDefaultByUsuario(email: String) {
+        direccionDao.clearDefaultByUsuario(email)
+    }
+
+    suspend fun getDireccionDefaultOnce(email: String): Direccion? {
+        return direccionDao.getDireccionDefaultOnceByUsuario(email)
+    }
+
+    suspend fun insertDireccionAsDefault(email: String, direccion: Direccion): Long {
+        return direccionDao.insertDireccionAsDefault(email, direccion)
+    }
 }

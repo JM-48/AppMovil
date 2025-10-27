@@ -31,10 +31,12 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -45,10 +47,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavController
 import com.example.catalogoproductos.viewmodel.PerfilUsuarioViewModel
 import com.example.catalogoproductos.viewmodel.AuthViewModel
+import com.example.catalogoproductos.repository.RegionComunaRepository
 import kotlinx.coroutines.launch
+import android.app.Activity
+import android.content.Intent
+import com.example.catalogoproductos.MainActivity
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -61,6 +68,7 @@ fun PerfilUsuarioScreen(
     val guardadoExitoso by perfilViewModel.guardadoExitoso.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
 
     Scaffold(
         topBar = {
@@ -238,22 +246,87 @@ fun PerfilUsuarioScreen(
                     )
                 }
 
-                // Ciudad
-                OutlinedTextField(
-                    value = perfilViewModel.ciudad,
-                    onValueChange = { perfilViewModel.updateCiudad(it) },
-                    label = { Text("Ciudad") },
-                    modifier = Modifier.fillMaxWidth(),
-                    isError = perfilViewModel.ciudadError != null,
-                    leadingIcon = {
-                        Icon(Icons.Default.LocationCity, contentDescription = "Ciudad")
-                    },
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Text,
-                        imeAction = ImeAction.Next
-                    ),
-                    singleLine = true
-                )
+                // Región y Comuna
+                val context = LocalContext.current
+                val regionesYComunas = remember { RegionComunaRepository().cargarDesdeAssets(context) }
+                var selectedRegion by remember { mutableStateOf("") }
+                var expandedRegion by remember { mutableStateOf(false) }
+                var expandedComuna by remember { mutableStateOf(false) }
+
+                // Inicializar la región seleccionada según la comuna ya guardada
+                LaunchedEffect(regionesYComunas, perfilViewModel.ciudad) {
+                    val found = regionesYComunas.firstOrNull { it.comunas.contains(perfilViewModel.ciudad) }
+                    selectedRegion = found?.region ?: selectedRegion
+                }
+
+                val regiones = remember(regionesYComunas) {
+                    regionesYComunas.map { it.region }.filter { it.isNotBlank() }
+                }
+                val comunas = remember(selectedRegion) {
+                    regionesYComunas.firstOrNull { it.region == selectedRegion }?.comunas?.filter { it.isNotBlank() } ?: emptyList()
+                }
+
+                // Región
+                ExposedDropdownMenuBox(
+                    expanded = expandedRegion,
+                    onExpandedChange = { expandedRegion = !expandedRegion }
+                ) {
+                    OutlinedTextField(
+                        value = selectedRegion,
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Región") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedRegion) },
+                        modifier = Modifier.menuAnchor().fillMaxWidth()
+                    )
+                    ExposedDropdownMenu(
+                        expanded = expandedRegion,
+                        onDismissRequest = { expandedRegion = false }
+                    ) {
+                        regiones.forEach { region ->
+                            DropdownMenuItem(
+                                text = { Text(region) },
+                                onClick = {
+                                    selectedRegion = region
+                                    // Resetear la comuna cuando cambia la región
+                                    perfilViewModel.updateCiudad("")
+                                    expandedRegion = false
+                                }
+                            )
+                        }
+                    }
+                }
+
+                // Comuna
+                ExposedDropdownMenuBox(
+                    expanded = expandedComuna,
+                    onExpandedChange = { if (comunas.isNotEmpty()) expandedComuna = !expandedComuna }
+                ) {
+                    OutlinedTextField(
+                        value = perfilViewModel.ciudad,
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Comuna") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedComuna) },
+                        isError = perfilViewModel.ciudadError != null,
+                        enabled = comunas.isNotEmpty(),
+                        modifier = Modifier.menuAnchor().fillMaxWidth()
+                    )
+                    ExposedDropdownMenu(
+                        expanded = expandedComuna,
+                        onDismissRequest = { expandedComuna = false }
+                    ) {
+                        comunas.forEach { c ->
+                            DropdownMenuItem(
+                                text = { Text(c) },
+                                onClick = {
+                                    perfilViewModel.updateCiudad(c)
+                                    expandedComuna = false
+                                }
+                            )
+                        }
+                    }
+                }
                 perfilViewModel.ciudadError?.let {
                     Text(
                         text = it,
@@ -324,8 +397,16 @@ fun PerfilUsuarioScreen(
                     onClick = {
                         authViewModel.logout()
                         navController.navigate("login") {
-                            popUpTo("login") { inclusive = true }
+                            popUpTo(navController.graph.startDestinationId) { inclusive = true }
                             launchSingleTop = true
+                            restoreState = false
+                        }
+                        val activity = (context as? Activity)
+                        activity?.let {
+                            it.finishAffinity()
+                            it.startActivity(Intent(it, MainActivity::class.java).apply {
+                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                            })
                         }
                     },
                     modifier = Modifier

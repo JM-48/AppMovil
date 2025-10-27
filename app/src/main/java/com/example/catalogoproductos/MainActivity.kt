@@ -3,7 +3,6 @@ package com.example.catalogoproductos
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -12,191 +11,188 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.layout.padding
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
-import androidx.navigation.compose.rememberNavController
-import com.example.catalogoproductos.components.BottomNavigationBar
 import com.example.catalogoproductos.database.AppDatabase
-import com.example.catalogoproductos.repository.CarritoRepository
-import com.example.catalogoproductos.repository.DireccionRepository
-import com.example.catalogoproductos.repository.PerfilUsuarioRepository
+import com.example.catalogoproductos.repository.*
 import com.example.catalogoproductos.screen.*
 import com.example.catalogoproductos.ui.MiTopBar
+import com.example.catalogoproductos.ui.theme.CatalogoProductosTheme
 import com.example.catalogoproductos.viewmodel.*
+import com.example.catalogoproductos.components.BottomNavigationBar
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            val navController = rememberNavController()
-            val catalogoViewModel = remember { CatalogoViewModel() }
-            val authViewModel = remember { AuthViewModel() }
-            
-            // Inicializar la base de datos y repositorios
-            val database = AppDatabase.getDatabase(this)
-            val carritoRepository = CarritoRepository(database.itemCarritoDao())
-            val perfilUsuarioRepository = PerfilUsuarioRepository(database.perfilUsuarioDao())
-            val direccionRepository = DireccionRepository(database.direccionDao())
-            
-            // Inicializar ViewModels
-            // CarritoViewModel se crea por ruta con Factory usando email
-            
-            var title by remember { mutableStateOf("Login") }
-            
-            // Determinar si el usuario está autenticado
-            val isUserLoggedIn = authViewModel.usuarioActual.value != null
-            val isAdmin = authViewModel.esAdministrador.value
-            
-            // Determinar si mostrar el bottom navigation
-            val navBackStackEntry by navController.currentBackStackEntryAsState()
-            val currentRoute = navBackStackEntry?.destination?.route
-            val showBottomNav = when (currentRoute) {
-                "login", "register" -> false
-                else -> true
-            }
-
-            Scaffold(
-                topBar = {
-                    MiTopBar(
-                        title = title,
-                        navController = navController,
-                        showBackButton = currentRoute != "catalogo" && currentRoute != "login",
-                        showCartButton = currentRoute != "carrito" && currentRoute != "login" && currentRoute != "register",
-                        isUserLoggedIn = isUserLoggedIn
-                    )
-                },
-                bottomBar = {
-                    if (showBottomNav) {
-                        BottomNavigationBar(
-                            navController = navController,
-                            isUserLoggedIn = isUserLoggedIn,
-                            isAdmin = isAdmin
-                        )
-                    }
-                }
-            ) { innerPadding ->
+            CatalogoProductosTheme {
                 Surface(color = MaterialTheme.colorScheme.background) {
-                    NavHost(
-                        navController = navController,
-                        startDestination = "login",
-                        modifier = Modifier.padding(innerPadding)
-                    ) {
-                        composable("login") {
-                            title = "Login"
-                            LoginScreen(navController, authViewModel)
-                        }
-                        composable("register") {
-                            title = "Registro"
-                            val registerViewModel = RegisterViewModel(perfilUsuarioRepository)
-                            RegisterScreen(navController, registerViewModel)
-                        }
-                        composable("catalogo") {
-                            title = "Catálogo de Productos"
-                            CatalogoScreen(navController, catalogoViewModel, authViewModel)
-                        }
-                        composable("detalle/{productoId}") { backStack ->
-                            title = "Detalle del Producto"
-                            val id =
-                                backStack.arguments?.getString("productoId")?.toIntOrNull() ?: -1
-                            val email = authViewModel.usuarioActual.value
-                            val carritoVm = if (email != null) {
-                                viewModel<CarritoViewModel>(
-                                    factory = CarritoViewModel.Factory(
-                                        carritoRepository,
-                                        email
-                                    )
-                                )
-                            } else {
-                                viewModel<CarritoViewModel>(
-                                    factory = CarritoViewModel.Factory(
-                                        carritoRepository,
-                                        ""
-                                    )
-                                )
-                            }
-                            DetalleProductoScreen(
-                                id,
-                                catalogoViewModel,
-                                carritoVm,
-                                navController,
-                                authViewModel
+                    val navController = androidx.navigation.compose.rememberNavController()
+
+                    // Base de datos y repositorios (recordados para evitar recreación en recomposición)
+                    val db = remember { AppDatabase.getDatabase(applicationContext) }
+                    val carritoRepository = remember { CarritoRepository(db.itemCarritoDao()) }
+                    val perfilUsuarioRepository = remember { PerfilUsuarioRepository(db.perfilUsuarioDao()) }
+                    val direccionRepository = remember { DireccionRepository(db.direccionDao()) }
+                    val authViewModel = viewModel<AuthViewModel>()
+                    val catalogoViewModel = viewModel<CatalogoViewModel>()
+                    val direccionViewModel = viewModel<DireccionViewModel>(
+                        factory = com.example.catalogoproductos.viewmodel.Factory(direccionRepository)
+                    )
+
+                    var title by remember { mutableStateOf("Catálogo de Productos") }
+
+                    Scaffold(
+                        topBar = {
+                            MiTopBar(
+                                title = title,
+                                navController = navController,
+                                showBackButton = false,
+                                isUserLoggedIn = authViewModel.usuarioActual.value != null
                             )
-                        }
-                        composable("carrito") {
-                            title = "Carrito de Compras"
-                            val email = authViewModel.usuarioActual.value
-                            email?.let { userEmail ->
-                                val carritoVm = viewModel<CarritoViewModel>(
-                                    factory = CarritoViewModel.Factory(
-                                        carritoRepository,
-                                        userEmail
-                                    )
+                        },
+                        bottomBar = {
+                            val navBackStackEntry by navController.currentBackStackEntryAsState()
+                            val currentRoute = navBackStackEntry?.destination?.route
+                            if (currentRoute !in listOf("login", "register")) {
+                                BottomNavigationBar(
+                                    navController = navController,
+                                    isUserLoggedIn = authViewModel.usuarioActual.value != null,
+                                    isAdmin = authViewModel.esAdministrador.value
                                 )
-                                CarritoScreen(navController, carritoVm)
-                            } ?: run {
-                                // Si el usuario no está autenticado, redirigir al login
-                                navController.navigate("login")
                             }
                         }
-                        composable("direccion") {
-                            title = "Dirección de Envío"
-                            val direccionViewModel = DireccionViewModel(direccionRepository)
-                            val email = authViewModel.usuarioActual.value
-                            email?.let {
-                                DireccionScreen(navController, direccionViewModel, authViewModel)
-                            } ?: run {
-                                // Si el usuario no está autenticado, redirigir al login
-                                navController.navigate("login")
+                    ) { paddingValues ->
+                        NavHost(navController = navController, startDestination = "login", modifier = Modifier.padding(paddingValues)) {
+                            composable("login") {
+                                title = "Inicio de Sesión"
+                                LoginScreen(navController, authViewModel)
                             }
-                        }
-                        composable("perfil") {
-                            title = "Mi Perfil"
-                            val email = authViewModel.usuarioActual.value
-                            email?.let { userEmail ->
-                                val perfilViewModel = viewModel<PerfilUsuarioViewModel>(
-                                    factory = PerfilUsuarioViewModel.Factory(
-                                        perfilUsuarioRepository,
-                                        userEmail
-                                    )
+                            composable("register") {
+                                title = "Registro"
+                                val registerViewModel = viewModel<RegisterViewModel>(
+                                    factory = RegisterViewModel.Factory(perfilUsuarioRepository, applicationContext)
                                 )
-                                PerfilUsuarioScreen(navController, perfilViewModel, authViewModel)
-                            } ?: run {
-                                // Si el usuario no está autenticado, redirigir al login
-                                navController.navigate("login")
+                                RegisterScreen(navController, registerViewModel)
                             }
-                        }
-                        composable("confirmacion") {
-                            title = "Confirmación de Compra"
-                            val email = authViewModel.usuarioActual.value
-                            val direccionViewModel = DireccionViewModel(direccionRepository)
-                            email?.let { userEmail ->
-                                val carritoVm = viewModel<CarritoViewModel>(
-                                    factory = CarritoViewModel.Factory(
-                                        carritoRepository,
-                                        userEmail
+                            composable("catalogo") {
+                                title = "Catálogo de Productos"
+                                CatalogoScreen(navController, catalogoViewModel, authViewModel)
+                            }
+                            composable("detalle/{productoId}") { backStack ->
+                                title = "Detalle del Producto"
+                                val id =
+                                    backStack.arguments?.getString("productoId")?.toIntOrNull() ?: -1
+                                val email = authViewModel.usuarioActual.value
+                                val carritoVm = if (email != null) {
+                                    viewModel<CarritoViewModel>(
+                                        factory = CarritoViewModel.Factory(
+                                            carritoRepository,
+                                            email
+                                        )
                                     )
-                                )
-                                ConfirmacionCompraScreen(
-                                    navController,
+                                } else {
+                                    viewModel<CarritoViewModel>(
+                                        factory = CarritoViewModel.Factory(
+                                            carritoRepository,
+                                            ""
+                                        )
+                                    )
+                                }
+                                DetalleProductoScreen(
+                                    id,
+                                    catalogoViewModel,
                                     carritoVm,
-                                    direccionViewModel,
-                                    userEmail
+                                    navController,
+                                    authViewModel
                                 )
-                            } ?: run {
-                                // Si el usuario no está autenticado, redirigir al login
-                                navController.navigate("login")
                             }
-                        }
-                        composable("backoffice") {
-                            title = "Back Office - Administración"
-                            val backOfficeViewModel = viewModel<BackOfficeViewModel>()
-                            if (authViewModel.esAdministrador.value) {
-                                BackOfficeScreen(navController, backOfficeViewModel)
-                            } else {
-                                // Si no es administrador, redirigir al login
-                                navController.navigate("login")
+                            composable("carrito") {
+                                title = "Carrito de Compras"
+                                val email = authViewModel.usuarioActual.value
+                                email?.let { userEmail ->
+                                    val carritoVm = viewModel<CarritoViewModel>(
+                                        factory = CarritoViewModel.Factory(
+                                            carritoRepository,
+                                            userEmail
+                                        )
+                                    )
+                                    CarritoScreen(navController, carritoVm)
+                                } ?: run {
+                                    // Si el usuario no está autenticado, redirigir al login
+                                    navController.navigate("login")
+                                }
+                            }
+                            composable("direccion") {
+                                title = "Dirección de Envío"
+                                // Use shared DireccionViewModel scoped to Activity
+                                val email = authViewModel.usuarioActual.value
+                                email?.let {
+                                    DireccionScreen(navController, direccionViewModel, authViewModel)
+                                } ?: run {
+                                    // Si el usuario no está autenticado, redirigir al login
+                                    navController.navigate("login")
+                                }
+                            }
+                            composable("perfil") {
+                                title = "Mi Perfil"
+                                val email = authViewModel.usuarioActual.value
+                                email?.let { userEmail ->
+                                    val perfilViewModel = viewModel<PerfilUsuarioViewModel>(
+                                        factory = PerfilUsuarioViewModel.Factory(
+                                            perfilUsuarioRepository,
+                                            userEmail
+                                        )
+                                    )
+                                    PerfilUsuarioScreen(navController, perfilViewModel, authViewModel)
+                                } ?: run {
+                                    // Si el usuario no está autenticado, redirigir al login
+                                    navController.navigate("login")
+                                }
+                            }
+                            composable("confirmacion") {
+                                title = "Confirmación de Compra"
+                                val email = authViewModel.usuarioActual.value
+                                // Use shared DireccionViewModel scoped to Activity
+                                email?.let { userEmail ->
+                                    val carritoVm = viewModel<CarritoViewModel>(
+                                        factory = CarritoViewModel.Factory(
+                                            carritoRepository,
+                                            userEmail
+                                        )
+                                    )
+                                    val perfilViewModel = viewModel<PerfilUsuarioViewModel>(
+                                        factory = PerfilUsuarioViewModel.Factory(
+                                            perfilUsuarioRepository,
+                                            userEmail
+                                        )
+                                    )
+                                    ConfirmacionCompraScreen(
+                                        navController,
+                                        carritoVm,
+                                        direccionViewModel,
+                                        userEmail,
+                                        perfilViewModel
+                                    )
+                                } ?: run {
+                                    // Si el usuario no está autenticado, redirigir al login
+                                    navController.navigate("login")
+                                }
+                            }
+                            composable("backoffice") {
+                                title = "Página de Admin"
+                                val backOfficeViewModel = viewModel<BackOfficeViewModel>()
+                                if (authViewModel.esAdministrador.value) {
+                                    BackOfficeScreen(navController, backOfficeViewModel, authViewModel)
+                                } else {
+                                    // Si no es administrador, redirigir al login
+                                    navController.navigate("login")
+                                }
                             }
                         }
                     }

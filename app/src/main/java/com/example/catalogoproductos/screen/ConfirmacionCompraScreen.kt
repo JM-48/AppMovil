@@ -16,6 +16,8 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.catalogoproductos.viewmodel.CarritoViewModel
 import com.example.catalogoproductos.viewmodel.DireccionViewModel
+import com.example.catalogoproductos.viewmodel.PerfilUsuarioViewModel
+import com.example.catalogoproductos.model.PerfilUsuario
 
 import androidx.compose.material3.*
 
@@ -25,7 +27,8 @@ fun ConfirmacionCompraScreen(
     navController: NavController,
     carritoViewModel: CarritoViewModel,
     direccionViewModel: DireccionViewModel,
-    email: String
+    email: String,
+    perfilUsuarioViewModel: PerfilUsuarioViewModel
 ) {
     val scrollState = rememberScrollState()
     val itemsCarrito by carritoViewModel.itemsCarrito.collectAsState(initial = emptyList())
@@ -61,10 +64,24 @@ fun ConfirmacionCompraScreen(
         ) {
             when (estadoCompra) {
                 EstadoCompra.EnProceso -> {
+                    val perfilFallback = PerfilUsuario(
+                        email = perfilUsuarioViewModel.email,
+                        nombre = perfilUsuarioViewModel.nombre,
+                        apellido = perfilUsuarioViewModel.apellido,
+                        telefono = perfilUsuarioViewModel.telefono,
+                        direccion = perfilUsuarioViewModel.direccion,
+                        ciudad = perfilUsuarioViewModel.ciudad,
+                        codigoPostal = perfilUsuarioViewModel.codigoPostal
+                    ).let { perfil ->
+                        // Si los campos clave están vacíos, considera que no hay perfil válido
+                        if (perfil.direccion.isBlank() && perfil.ciudad.isBlank() && perfil.telefono.isBlank()) null else perfil
+                    }
+
                     ResumenCompraContent(
                         itemsCarrito = itemsCarrito,
                         totalCarrito = totalCarrito,
                         direccion = direccionDefault,
+                        perfilFallback = perfilFallback,
                         onCompraClick = {
                             // Simulamos una validación de pago
                             val compraExitosa = (Math.random() > 0.3) // 70% de probabilidad de éxito
@@ -102,6 +119,7 @@ fun ResumenCompraContent(
     itemsCarrito: List<com.example.catalogoproductos.model.ItemCarrito>,
     totalCarrito: String,
     direccion: com.example.catalogoproductos.model.Direccion?,
+    perfilFallback: PerfilUsuario?,
     onCompraClick: () -> Unit
 ) {
     Card(
@@ -181,19 +199,36 @@ fun ResumenCompraContent(
             
             Divider()
             
-            if (direccion != null) {
-                Column(modifier = Modifier.padding(vertical = 8.dp)) {
-                    Text(text = "Calle: ${direccion.calle} ${direccion.numero}")
-                    Text(text = "Ciudad: ${direccion.ciudad}, ${direccion.provincia}")
-                    Text(text = "Código Postal: ${direccion.codigoPostal}")
-                    Text(text = "Teléfono: ${direccion.telefono}")
+            when {
+                direccion != null -> {
+                    Column(modifier = Modifier.padding(vertical = 8.dp)) {
+                        Text(text = "Calle: ${direccion.calle} ${direccion.numero}")
+                        Text(text = "Ciudad: ${direccion.ciudad}, ${direccion.provincia}")
+                        Text(text = "Código Postal: ${direccion.codigoPostal}")
+                        Text(text = "Teléfono: ${direccion.telefono}")
+                    }
                 }
-            } else {
-                Text(
-                    text = "No hay dirección de envío seleccionada",
-                    color = Color.Red,
-                    modifier = Modifier.padding(vertical = 8.dp)
-                )
+                perfilFallback != null -> {
+                    Column(modifier = Modifier.padding(vertical = 8.dp)) {
+                        Text(text = "Dirección: ${perfilFallback.direccion}")
+                        Text(text = "Ciudad: ${perfilFallback.ciudad}")
+                        Text(text = "Código Postal: ${perfilFallback.codigoPostal}")
+                        Text(text = "Teléfono: ${perfilFallback.telefono}")
+                        Text(
+                            text = "Usando dirección del perfil por no existir una dirección predeterminada",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.padding(top = 8.dp)
+                        )
+                    }
+                }
+                else -> {
+                    Text(
+                        text = "No hay dirección de envío seleccionada",
+                        color = Color.Red,
+                        modifier = Modifier.padding(vertical = 8.dp)
+                    )
+                }
             }
         }
     }
@@ -236,7 +271,7 @@ fun ResumenCompraContent(
         modifier = Modifier
             .fillMaxWidth()
             .height(50.dp),
-        enabled = itemsCarrito.isNotEmpty() && direccion != null,
+        enabled = itemsCarrito.isNotEmpty() && (direccion != null || perfilFallback != null),
         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
     ) {
         Icon(

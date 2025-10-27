@@ -9,6 +9,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -24,14 +25,20 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.catalogoproductos.model.Producto
 import com.example.catalogoproductos.viewmodel.BackOfficeViewModel
+import com.example.catalogoproductos.viewmodel.AuthViewModel
 
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.foundation.Image
+import androidx.compose.ui.layout.ContentScale
+import coil.compose.rememberAsyncImagePainter
+import androidx.compose.ui.draw.clip
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BackOfficeScreen(
     navController: NavController,
-    viewModel: BackOfficeViewModel
+    viewModel: BackOfficeViewModel,
+    authViewModel: AuthViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
 ) {
     val productos by viewModel.productos.collectAsState()
     val productoSeleccionado by viewModel.productoSeleccionado.collectAsState()
@@ -59,10 +66,19 @@ fun BackOfficeScreen(
         }
     }
 
+    // Mostrar mensaje de inicio de sesión de administrador al entrar
+    LaunchedEffect(authViewModel.mensaje.value, authViewModel.usuarioActual.value, authViewModel.esAdministrador.value) {
+        val msg = authViewModel.mensaje.value
+        if (authViewModel.usuarioActual.value != null && authViewModel.esAdministrador.value && msg.isNotBlank()) {
+            snackbarHostState.showSnackbar(message = msg, duration = SnackbarDuration.Short)
+            authViewModel.mensaje.value = ""
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Back Office - Administración") },
+                title = { Text("Página de Admin") },
                 navigationIcon = {
                     IconButton(onClick = {
                         val popped = navController.popBackStack()
@@ -144,31 +160,6 @@ fun BackOfficeScreen(
             }
         }
     }
-    
-    // Diálogo de confirmación de eliminación
-    if (showDeleteDialog && productoAEliminar != null) {
-        AlertDialog(
-            onDismissRequest = { showDeleteDialog = false },
-            title = { Text("Confirmar eliminación") },
-            text = { Text("¿Está seguro que desea eliminar el producto '${productoAEliminar?.nombre}'?") },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        productoAEliminar?.id?.let { viewModel.eliminarProducto(it) }
-                        showDeleteDialog = false
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
-                ) {
-                    Text("Eliminar", color = Color.White)
-                }
-            },
-            dismissButton = {
-                OutlinedButton(onClick = { showDeleteDialog = false }) {
-                    Text("Cancelar")
-                }
-            }
-        )
-    }
 }
 
 @Composable
@@ -177,95 +168,49 @@ fun ProductosTab(
     onProductoClick: (Producto) -> Unit,
     onDeleteClick: (Producto) -> Unit
 ) {
-    if (productos.isEmpty()) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Icon(
-                    Icons.Default.Info,
-                    contentDescription = "Sin productos",
-                    modifier = Modifier.size(48.dp),
-                    tint = MaterialTheme.colorScheme.primary
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                Text("No hay productos disponibles")
-            }
-        }
-    } else {
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            items(productos) { producto ->
-                ProductoAdminCard(
-                    producto = producto,
-                    onProductoClick = { onProductoClick(producto) },
-                    onDeleteClick = { onDeleteClick(producto) }
-                )
-            }
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        items(productos) { producto ->
+            ProductoItem(producto, onProductoClick, onDeleteClick)
         }
     }
 }
 
 @Composable
-fun ProductoAdminCard(
+fun ProductoItem(
     producto: Producto,
-    onProductoClick: () -> Unit,
-    onDeleteClick: () -> Unit
+    onProductoClick: (Producto) -> Unit,
+    onDeleteClick: (Producto) -> Unit
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onProductoClick),
+            .clickable { onProductoClick(producto) },
+        shape = RoundedCornerShape(8.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Información del producto
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(end = 8.dp)
-            ) {
-                Text(
-                    text = producto.nombre,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 18.sp
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = "ID: ${producto.id}",
-                    fontSize = 12.sp,
-                    color = Color.Gray
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = com.example.catalogoproductos.util.CurrencyUtils.formatCLP(producto.precio),
-                     fontWeight = FontWeight.Medium,
-                     color = MaterialTheme.colorScheme.primary
-                 )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = "Stock: ${producto.stock}",
-                    fontSize = 14.sp
-                )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(text = producto.nombre, fontWeight = FontWeight.Bold)
+                Text(text = "Precio: ${com.example.catalogoproductos.util.CurrencyUtils.formatCLP(producto.precio)}")
+                Text(text = "Stock: ${producto.stock}")
             }
-            
-            // Botones de acción
-            Column(
-                horizontalAlignment = Alignment.End
-            ) {
-                IconButton(onClick = onProductoClick) {
-                    Text("Editar", color = MaterialTheme.colorScheme.primary)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                IconButton(onClick = { onProductoClick(producto) }) {
+                    Icon(Icons.Default.Edit, contentDescription = "Editar")
                 }
-
+                IconButton(onClick = { onDeleteClick(producto) }) {
+                    Icon(Icons.Default.Delete, contentDescription = "Eliminar")
+                }
             }
         }
     }
@@ -273,100 +218,112 @@ fun ProductoAdminCard(
 
 @Composable
 fun FormularioTab(viewModel: BackOfficeViewModel) {
-    val scrollState = androidx.compose.foundation.rememberScrollState()
-    
+    val scrollState = rememberScrollState()
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp)
-            .verticalScroll(scrollState),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+            .verticalScroll(scrollState)
     ) {
         Text(
-            text = if (viewModel.productoSeleccionado.value != null) "Editar Producto" else "Nuevo Producto",
+            text = "Formulario de Producto",
             fontSize = 20.sp,
             fontWeight = FontWeight.Bold
         )
-        
-        // Nombre
+        Spacer(modifier = Modifier.height(16.dp))
         OutlinedTextField(
             value = viewModel.nombre,
             onValueChange = { viewModel.updateNombre(it) },
-            label = { Text("Nombre del producto") },
+            label = { Text("Nombre") },
             modifier = Modifier.fillMaxWidth(),
             isError = viewModel.nombreError != null,
-
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text, imeAction = ImeAction.Next),
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Text,
+                imeAction = ImeAction.Next
+            ),
             singleLine = true
         )
-        viewModel.nombreError?.let { Text(text = it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(start = 16.dp)) }
-        
-        // Descripción
+        viewModel.nombreError?.let {
+            Text(
+                text = it,
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.align(Alignment.Start)
+            )
+        }
+        Spacer(modifier = Modifier.height(8.dp))
         OutlinedTextField(
             value = viewModel.descripcion,
             onValueChange = { viewModel.updateDescripcion(it) },
-            label = { Text("Descripción (opcional)") },
+            label = { Text("Descripción") },
             modifier = Modifier.fillMaxWidth(),
-            isError = viewModel.descripcionError != null,
-
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text, imeAction = ImeAction.Next),
-            maxLines = 3
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Text,
+                imeAction = ImeAction.Next
+            )
         )
-        viewModel.descripcionError?.let { Text(text = it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(start = 16.dp)) }
-        
-        // Precio (entero)
+        Spacer(modifier = Modifier.height(8.dp))
         OutlinedTextField(
             value = viewModel.precio,
             onValueChange = { viewModel.updatePrecio(it) },
-            label = { Text("Precio (entero)") },
+            label = { Text("Precio") },
             modifier = Modifier.fillMaxWidth(),
             isError = viewModel.precioError != null,
-
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Number,
+                imeAction = ImeAction.Next
+            ),
             singleLine = true
         )
-        viewModel.precioError?.let { Text(text = it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(start = 16.dp)) }
-        
-        // Stock (> 0)
+        viewModel.precioError?.let {
+            Text(
+                text = it,
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.align(Alignment.Start)
+            )
+        }
+        Spacer(modifier = Modifier.height(8.dp))
         OutlinedTextField(
             value = viewModel.stock,
             onValueChange = { viewModel.updateStock(it) },
-            label = { Text("Stock (mayor que 0)") },
+            label = { Text("Stock") },
             modifier = Modifier.fillMaxWidth(),
             isError = viewModel.stockError != null,
-
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Number,
+                imeAction = ImeAction.Next
+            ),
             singleLine = true
         )
-        viewModel.stockError?.let { Text(text = it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(start = 16.dp)) }
-        
-        // URL de la imagen
+        viewModel.stockError?.let {
+            Text(
+                text = it,
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.align(Alignment.Start)
+            )
+        }
+        Spacer(modifier = Modifier.height(8.dp))
         OutlinedTextField(
             value = viewModel.imagen,
             onValueChange = { viewModel.updateImagen(it) },
-            label = { Text("URL de la imagen") },
+            label = { Text("URL de imagen") },
             modifier = Modifier.fillMaxWidth(),
-            isError = viewModel.imagenError != null,
-
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Done),
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Uri,
+                imeAction = ImeAction.Done
+            ),
             singleLine = true
         )
-        viewModel.imagenError?.let { Text(text = it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(start = 16.dp)) }
-        
-        // Mensaje de error general
-        if (viewModel.errorMessage.isNotEmpty()) {
-            Text(text = viewModel.errorMessage, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(16.dp))
-        }
-        
-        // Botones de acción
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            OutlinedButton(onClick = { viewModel.nuevoProducto() }, modifier = Modifier.weight(1f)) { Text("Limpiar") }
-            Button(onClick = {}, modifier = Modifier.weight(1f), enabled = false) { Text("Guardar (no funcional)") }
-        }
-        
         Spacer(modifier = Modifier.height(16.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Button(onClick = { viewModel.guardarProducto() }) {
+                Text("Guardar")
+            }
+            OutlinedButton(onClick = { viewModel.nuevoProducto() }) {
+                Text("Limpiar")
+            }
+        }
     }
 }

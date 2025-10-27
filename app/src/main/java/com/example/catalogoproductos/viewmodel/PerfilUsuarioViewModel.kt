@@ -127,7 +127,7 @@ class PerfilUsuarioViewModel(
         telefonoError = when {
             telefono.isBlank() -> "El teléfono es obligatorio"
             telefono.length < 9 -> "El teléfono debe tener al menos 9 dígitos"
-            !telefono.all { it.isDigit() || it == '+' || it == ' ' || it == '-' } -> "Formato de teléfono inválido"
+            !telefono.all { it.isDigit() } -> "El teléfono solo debe contener números"
             else -> null
         }
     }
@@ -144,6 +144,7 @@ class PerfilUsuarioViewModel(
         ciudadError = when {
             ciudad.isBlank() -> "La ciudad es obligatoria"
             ciudad.length < 3 -> "La ciudad debe tener al menos 3 caracteres"
+            !ciudad.all { it.isLetter() || it.isWhitespace() } -> "La ciudad solo debe contener letras"
             else -> null
         }
     }
@@ -191,7 +192,7 @@ class PerfilUsuarioViewModel(
                 }
             }
         } else {
-            errorMessage = "Por favor, corrija los errores antes de guardar"
+            errorMessage = "Por favor, corrija los errores en el formulario"
         }
     }
 

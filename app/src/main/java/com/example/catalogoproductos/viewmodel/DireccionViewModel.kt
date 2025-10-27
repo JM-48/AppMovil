@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Job
 
 class DireccionViewModel(private val direccionRepository: DireccionRepository) : ViewModel() {
 
@@ -56,6 +57,10 @@ class DireccionViewModel(private val direccionRepository: DireccionRepository) :
     // Dirección predeterminada del usuario
     private val _direccionDefault = MutableStateFlow<Direccion?>(null)
     val direccionDefault: StateFlow<Direccion?> = _direccionDefault.asStateFlow()
+
+    // Track job/email to avoid duplicate collectors
+    private var defaultCollectJob: Job? = null
+    private var defaultEmail: String? = null
 
     // Funciones para actualizar los campos
     fun updateCalle(value: String) {
@@ -129,8 +134,7 @@ class DireccionViewModel(private val direccionRepository: DireccionRepository) :
     private fun validateCodigoPostal() {
         codigoPostalError = when {
             codigoPostal.isEmpty() -> "El código postal es obligatorio"
-            codigoPostal.length != 5 -> "El código postal debe tener 5 dígitos"
-            !codigoPostal.all { it.isDigit() } -> "El código postal solo debe contener números"
+            codigoPostal.length != 5 || !codigoPostal.all { it.isDigit() } -> "El código postal debe tener 5 dígitos"
             else -> null
         }
     }
@@ -159,7 +163,12 @@ class DireccionViewModel(private val direccionRepository: DireccionRepository) :
 
     // Cargar la dirección predeterminada del usuario
     fun cargarDireccionDefault(emailUsuario: String) {
-        viewModelScope.launch {
+        if (defaultEmail == emailUsuario && defaultCollectJob?.isActive == true) return
+        defaultCollectJob?.cancel()
+        defaultEmail = emailUsuario
+        defaultCollectJob = viewModelScope.launch {
+            val initial = direccionRepository.getDireccionDefaultOnce(emailUsuario)
+            _direccionDefault.value = initial
             direccionRepository.getDireccionDefault(emailUsuario).collect { dir ->
                 _direccionDefault.value = dir
             }
@@ -175,6 +184,13 @@ class DireccionViewModel(private val direccionRepository: DireccionRepository) :
 
         viewModelScope.launch {
             try {
+                var setDefault = esDefault
+                if (!setDefault) {
+                    val existingDefault = direccionRepository.getDireccionDefaultOnce(emailUsuario)
+                    if (existingDefault == null) {
+                        setDefault = true
+                    }
+                }
                 val direccion = Direccion(
                     emailUsuario = emailUsuario,
                     calle = calle,
@@ -183,10 +199,17 @@ class DireccionViewModel(private val direccionRepository: DireccionRepository) :
                     provincia = provincia,
                     codigoPostal = codigoPostal,
                     telefono = telefono,
-                    esDefault = esDefault
+                    esDefault = setDefault
                 )
-                
-                direccionRepository.guardarDireccion(direccion)
+
+                if (setDefault) {
+                    direccionRepository.insertDireccionAsDefault(emailUsuario, direccion)
+                } else {
+                    direccionRepository.guardarDireccion(direccion)
+                }
+                if (setDefault) {
+                    _direccionDefault.value = direccion
+                }
                 _guardadoExitoso.value = true
                 errorMessage = ""
             } catch (e: Exception) {
