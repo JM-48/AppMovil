@@ -9,6 +9,9 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.catalogoproductos.viewmodel.AuthViewModel
 import java.util.regex.Pattern
+import androidx.compose.ui.graphics.Color
+import com.example.catalogoproductos.components.GradientButton
+import androidx.compose.material3.TextFieldDefaults
 
 @Composable
 fun LoginScreen(navController: NavController, viewModel: AuthViewModel) {
@@ -46,6 +49,8 @@ fun LoginScreen(navController: NavController, viewModel: AuthViewModel) {
     }
 
     Scaffold(
+        containerColor = androidx.compose.ui.graphics.Color.Transparent,
+        contentColor = MaterialTheme.colorScheme.onBackground,
         snackbarHost = {
             SnackbarHost(hostState = snackbarHostState) { data ->
                 Snackbar(
@@ -55,7 +60,7 @@ fun LoginScreen(navController: NavController, viewModel: AuthViewModel) {
                         }
                     }
                 ) {
-                    Text(data.visuals.message)
+                    Text(data.visuals.message, color = Color.White)
                 }
             }
         }
@@ -78,8 +83,17 @@ fun LoginScreen(navController: NavController, viewModel: AuthViewModel) {
                 label = { Text("Email") },
                 isError = emailError != null,
                 keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Email),
-                modifier = Modifier.fillMaxWidth()
-            )
+                modifier = Modifier.fillMaxWidth(),
+                    colors = TextFieldDefaults.colors(
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        cursorColor = MaterialTheme.colorScheme.secondary,
+                        focusedLabelColor = Color.White,
+                        unfocusedLabelColor = Color.White.copy(alpha = 0.7f),
+                        focusedIndicatorColor = MaterialTheme.colorScheme.primary,
+                        unfocusedIndicatorColor = MaterialTheme.colorScheme.secondary
+                    )
+                )
             emailError?.let {
                 Text(
                     text = it,
@@ -92,12 +106,22 @@ fun LoginScreen(navController: NavController, viewModel: AuthViewModel) {
                 value = password,
                 onValueChange = { password = it },
                 label = { Text("Contraseña") },
-                modifier = Modifier.fillMaxWidth()
-            )
+                modifier = Modifier.fillMaxWidth(),
+                    colors = TextFieldDefaults.colors(
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        cursorColor = MaterialTheme.colorScheme.secondary,
+                        focusedLabelColor = Color.White,
+                        unfocusedLabelColor = Color.White.copy(alpha = 0.7f),
+                        focusedIndicatorColor = MaterialTheme.colorScheme.primary,
+                        unfocusedIndicatorColor = MaterialTheme.colorScheme.secondary
+                    )
+                )
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            Button(
+            GradientButton(
+                text = "Entrar",
                 onClick = {
                     if (emailError == null) {
                         if (viewModel.login(email, password)) {
@@ -117,10 +141,9 @@ fun LoginScreen(navController: NavController, viewModel: AuthViewModel) {
                         }
                     }
                 },
-                enabled = emailError == null && email.isNotBlank() && password.isNotBlank()
-            ) {
-                Text("Entrar")
-            }
+                enabled = emailError == null && email.isNotBlank() && password.isNotBlank(),
+                modifier = Modifier.fillMaxWidth()
+            )
 
             Spacer(modifier = Modifier.height(10.dp))
             
@@ -129,7 +152,7 @@ fun LoginScreen(navController: NavController, viewModel: AuthViewModel) {
                     launchSingleTop = true
                 }
             }) {
-                Text("¿No tienes cuenta? Regístrate")
+                Text("¿No tienes cuenta? Regístrate", color = Color.White)
             }
         }
     }

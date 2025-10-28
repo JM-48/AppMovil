@@ -18,6 +18,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.background
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.graphics.Color
+import com.example.catalogoproductos.components.GradientButton
 
 @Composable
 fun CatalogoScreen(
@@ -43,16 +45,18 @@ fun CatalogoScreen(
     }
 
     Scaffold(
+        containerColor = Color.Transparent,
+        contentColor = Color.White,
         snackbarHost = {
             SnackbarHost(hostState = snackbarHostState) { data ->
                 Snackbar(
                     action = {
                         data.visuals.actionLabel?.let { label ->
-                            TextButton(onClick = { data.performAction() }) { Text(label) }
+                            TextButton(onClick = { data.performAction() }) { Text(label, color = Color.White) }
                         }
                     }
                 ) {
-                    Text(data.visuals.message)
+                    Text(data.visuals.message, color = Color.White)
                 }
             }
         }
@@ -140,11 +144,11 @@ fun CatalogoScreen(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.End
                                 ) {
-                                    OutlinedButton(onClick = {
-                                        navController.navigate("detalle/${producto.id}")
-                                    }) {
-                                        Text("Ver detalle")
-                                    }
+                                    GradientButton(
+                                        text = "Ver detalle",
+                                        onClick = { navController.navigate("detalle/${producto.id}") },
+                                        modifier = Modifier.width(160.dp).height(45.dp)
+                                    )
                                 }
                             }
                         }

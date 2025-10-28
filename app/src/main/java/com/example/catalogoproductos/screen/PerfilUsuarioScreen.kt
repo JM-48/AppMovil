@@ -43,6 +43,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import com.example.catalogoproductos.components.GradientButton
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -71,9 +72,17 @@ fun PerfilUsuarioScreen(
     val context = LocalContext.current
 
     Scaffold(
+        containerColor = Color.Transparent,
+        contentColor = Color.White,
         topBar = {
             TopAppBar(
-                title = { Text("Mi Perfil") },
+                title = {
+                    Text(
+                        "Mi Perfil",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = {
                         val popped = navController.popBackStack()
@@ -84,12 +93,22 @@ fun PerfilUsuarioScreen(
                             }
                         }
                     }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
+                        Icon(
+                            Icons.Default.ArrowBack,
+                            contentDescription = "Volver",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
                     }
                 },
                 actions = {
                     // Sin acciones adicionales para simplificar la UI
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.Transparent,
+                    titleContentColor = MaterialTheme.colorScheme.primary,
+                    navigationIconContentColor = MaterialTheme.colorScheme.primary,
+                    actionIconContentColor = MaterialTheme.colorScheme.secondary
+                )
             )
         },
         snackbarHost = {
@@ -105,7 +124,7 @@ fun PerfilUsuarioScreen(
                         }
                     }
                 ) {
-                    Text(data.visuals.message)
+                    Text(data.visuals.message, color = Color.White)
                 }
             }
         }
@@ -142,6 +161,15 @@ fun PerfilUsuarioScreen(
                     leadingIcon = {
                         Icon(Icons.Default.Email, contentDescription = "Email")
                     },
+                    colors = TextFieldDefaults.colors(
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        cursorColor = Color.White,
+                        focusedLabelColor = Color.White,
+                        unfocusedLabelColor = Color.White,
+                        focusedIndicatorColor = Color.White,
+                        unfocusedIndicatorColor = Color.White
+                    ),
                     enabled = false,
                     singleLine = true
                 )
@@ -156,6 +184,17 @@ fun PerfilUsuarioScreen(
                     leadingIcon = {
                         Icon(Icons.Default.Person, contentDescription = "Nombre")
                     },
+                    colors = TextFieldDefaults.colors(
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        cursorColor = Color.White,
+                        focusedLabelColor = Color.White,
+                        unfocusedLabelColor = Color.White,
+                        focusedIndicatorColor = Color.White,
+                        unfocusedIndicatorColor = Color.White,
+                        focusedPlaceholderColor = Color.White.copy(alpha = 0.7f),
+                        unfocusedPlaceholderColor = Color.White.copy(alpha = 0.7f)
+                    ),
                     keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.Text,
                         imeAction = ImeAction.Next
@@ -181,6 +220,17 @@ fun PerfilUsuarioScreen(
                     leadingIcon = {
                         Icon(Icons.Default.Person, contentDescription = "Apellido")
                     },
+                    colors = TextFieldDefaults.colors(
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        cursorColor = Color.White,
+                        focusedLabelColor = Color.White,
+                        unfocusedLabelColor = Color.White,
+                        focusedIndicatorColor = Color.White,
+                        unfocusedIndicatorColor = Color.White,
+                        focusedPlaceholderColor = Color.White.copy(alpha = 0.7f),
+                        unfocusedPlaceholderColor = Color.White.copy(alpha = 0.7f)
+                    ),
                     keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.Text,
                         imeAction = ImeAction.Next
@@ -206,6 +256,17 @@ fun PerfilUsuarioScreen(
                     leadingIcon = {
                         Icon(Icons.Default.Phone, contentDescription = "Teléfono")
                     },
+                    colors = TextFieldDefaults.colors(
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        cursorColor = Color.White,
+                        focusedLabelColor = Color.White,
+                        unfocusedLabelColor = Color.White,
+                        focusedIndicatorColor = Color.White,
+                        unfocusedIndicatorColor = Color.White,
+                        focusedPlaceholderColor = Color.White.copy(alpha = 0.7f),
+                        unfocusedPlaceholderColor = Color.White.copy(alpha = 0.7f)
+                    ),
                     keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.Phone,
                         imeAction = ImeAction.Next
@@ -231,6 +292,17 @@ fun PerfilUsuarioScreen(
                     leadingIcon = {
                         Icon(Icons.Default.Home, contentDescription = "Dirección")
                     },
+                    colors = TextFieldDefaults.colors(
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        cursorColor = Color.White,
+                        focusedLabelColor = Color.White,
+                        unfocusedLabelColor = Color.White,
+                        focusedIndicatorColor = Color.White,
+                        unfocusedIndicatorColor = Color.White,
+                        focusedPlaceholderColor = Color.White.copy(alpha = 0.7f),
+                        unfocusedPlaceholderColor = Color.White.copy(alpha = 0.7f)
+                    ),
                     keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.Text,
                         imeAction = ImeAction.Next
@@ -276,6 +348,17 @@ fun PerfilUsuarioScreen(
                         onValueChange = {},
                         readOnly = true,
                         label = { Text("Región") },
+                        colors = TextFieldDefaults.colors(
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White,
+                            cursorColor = Color.White,
+                            focusedLabelColor = Color.White,
+                            unfocusedLabelColor = Color.White,
+                            focusedIndicatorColor = Color.White,
+                            unfocusedIndicatorColor = Color.White,
+                            focusedPlaceholderColor = Color.White.copy(alpha = 0.7f),
+                            unfocusedPlaceholderColor = Color.White.copy(alpha = 0.7f)
+                        ),
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedRegion) },
                         modifier = Modifier.menuAnchor().fillMaxWidth()
                     )
@@ -309,6 +392,17 @@ fun PerfilUsuarioScreen(
                         label = { Text("Comuna") },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedComuna) },
                         isError = perfilViewModel.ciudadError != null,
+                        colors = TextFieldDefaults.colors(
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White,
+                            cursorColor = Color.White,
+                            focusedLabelColor = Color.White,
+                            unfocusedLabelColor = Color.White,
+                            focusedIndicatorColor = Color.White,
+                            unfocusedIndicatorColor = Color.White,
+                            focusedPlaceholderColor = Color.White.copy(alpha = 0.7f),
+                            unfocusedPlaceholderColor = Color.White.copy(alpha = 0.7f)
+                        ),
                         enabled = comunas.isNotEmpty(),
                         modifier = Modifier.menuAnchor().fillMaxWidth()
                     )
@@ -346,6 +440,17 @@ fun PerfilUsuarioScreen(
                     leadingIcon = {
                         Icon(Icons.Default.Pin, contentDescription = "Código Postal")
                     },
+                    colors = TextFieldDefaults.colors(
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        cursorColor = Color.White,
+                        focusedLabelColor = Color.White,
+                        unfocusedLabelColor = Color.White,
+                        focusedIndicatorColor = Color.White,
+                        unfocusedIndicatorColor = Color.White,
+                        focusedPlaceholderColor = Color.White.copy(alpha = 0.7f),
+                        unfocusedPlaceholderColor = Color.White.copy(alpha = 0.7f)
+                    ),
                     keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.Number,
                         imeAction = ImeAction.Done
@@ -382,18 +487,17 @@ fun PerfilUsuarioScreen(
                 }
 
                 // Botón de guardar
-                Button(
+                GradientButton(
+                    text = "Guardar Cambios",
                     onClick = { perfilViewModel.guardarPerfil() },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(50.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-                ) {
-                    Text("Guardar Cambios", color = Color.White)
-                }
+                        .height(50.dp)
+                )
 
                 // Botón de cerrar sesión
-                Button(
+                GradientButton(
+                    text = "Cerrar sesión",
                     onClick = {
                         authViewModel.logout()
                         navController.navigate("login") {
@@ -411,11 +515,8 @@ fun PerfilUsuarioScreen(
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(50.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
-                ) {
-                    Text("Cerrar sesión", color = Color.White)
-                }
+                        .height(50.dp)
+                )
 
                 androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(16.dp))
             }

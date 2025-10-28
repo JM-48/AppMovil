@@ -12,6 +12,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import com.example.catalogoproductos.components.GradientButton
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -73,14 +74,32 @@ fun DireccionScreen(
     }
 
     Scaffold(
+        containerColor = Color.Transparent,
+        contentColor = Color.White,
         topBar = {
             TopAppBar(
-                title = { Text("Dirección de Envío") },
+                title = {
+                    Text(
+                        "Dirección de Envío",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
+                        Icon(
+                            Icons.Default.ArrowBack,
+                            contentDescription = "Volver",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.Transparent,
+                    titleContentColor = MaterialTheme.colorScheme.primary,
+                    navigationIconContentColor = MaterialTheme.colorScheme.primary,
+                    actionIconContentColor = MaterialTheme.colorScheme.secondary
+                )
             )
         }
     ) { paddingValues ->
@@ -100,6 +119,17 @@ fun DireccionScreen(
                 label = { Text("Calle") },
                 modifier = Modifier.fillMaxWidth(),
                 isError = direccionViewModel.calleError != null,
+                colors = TextFieldDefaults.colors(
+                    focusedTextColor = Color.White,
+                    unfocusedTextColor = Color.White,
+                    cursorColor = Color.White,
+                    focusedLabelColor = Color.White,
+                    unfocusedLabelColor = Color.White,
+                    focusedIndicatorColor = Color.White,
+                    unfocusedIndicatorColor = Color.White,
+                    focusedPlaceholderColor = Color.White.copy(alpha = 0.7f),
+                    unfocusedPlaceholderColor = Color.White.copy(alpha = 0.7f)
+                ),
 
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Text,
@@ -123,6 +153,17 @@ fun DireccionScreen(
                 label = { Text("Número") },
                 modifier = Modifier.fillMaxWidth(),
                 isError = direccionViewModel.numeroError != null,
+                colors = TextFieldDefaults.colors(
+                    focusedTextColor = Color.White,
+                    unfocusedTextColor = Color.White,
+                    cursorColor = Color.White,
+                    focusedLabelColor = Color.White,
+                    unfocusedLabelColor = Color.White,
+                    focusedIndicatorColor = Color.White,
+                    unfocusedIndicatorColor = Color.White,
+                    focusedPlaceholderColor = Color.White.copy(alpha = 0.7f),
+                    unfocusedPlaceholderColor = Color.White.copy(alpha = 0.7f)
+                ),
 
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Text,
@@ -153,6 +194,17 @@ fun DireccionScreen(
                     modifier = Modifier
                         .menuAnchor()
                         .fillMaxWidth(),
+                    colors = TextFieldDefaults.colors(
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        cursorColor = Color.White,
+                        focusedLabelColor = Color.White,
+                        unfocusedLabelColor = Color.White,
+                        focusedIndicatorColor = Color.White,
+                        unfocusedIndicatorColor = Color.White,
+                        focusedPlaceholderColor = Color.White.copy(alpha = 0.7f),
+                        unfocusedPlaceholderColor = Color.White.copy(alpha = 0.7f)
+                    ),
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedRegion) },
                     isError = direccionViewModel.provinciaError != null,
                     singleLine = true
@@ -199,6 +251,17 @@ fun DireccionScreen(
                         .fillMaxWidth(),
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedComuna) },
                     isError = direccionViewModel.ciudadError != null,
+                    colors = TextFieldDefaults.colors(
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        cursorColor = Color.White,
+                        focusedLabelColor = Color.White,
+                        unfocusedLabelColor = Color.White,
+                        focusedIndicatorColor = Color.White,
+                        unfocusedIndicatorColor = Color.White,
+                        focusedPlaceholderColor = Color.White.copy(alpha = 0.7f),
+                        unfocusedPlaceholderColor = Color.White.copy(alpha = 0.7f)
+                    ),
                     enabled = comunasDisponibles.isNotEmpty(),
                     singleLine = true
                 )
@@ -228,7 +291,7 @@ fun DireccionScreen(
             if (selectedRegion.isNotBlank() && comunasDisponibles.isEmpty()) {
                 Text(
                     text = "No hay comunas disponibles para la región seleccionada",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = Color.White,
                     style = MaterialTheme.typography.bodySmall,
                     modifier = Modifier.align(Alignment.Start)
                 )
@@ -241,6 +304,17 @@ fun DireccionScreen(
                 label = { Text("Código Postal") },
                 modifier = Modifier.fillMaxWidth(),
                 isError = direccionViewModel.codigoPostalError != null,
+                colors = TextFieldDefaults.colors(
+                    focusedTextColor = Color.White,
+                    unfocusedTextColor = Color.White,
+                    cursorColor = Color.White,
+                    focusedLabelColor = Color.White,
+                    unfocusedLabelColor = Color.White,
+                    focusedIndicatorColor = Color.White,
+                    unfocusedIndicatorColor = Color.White,
+                    focusedPlaceholderColor = Color.White.copy(alpha = 0.7f),
+                    unfocusedPlaceholderColor = Color.White.copy(alpha = 0.7f)
+                ),
 
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Number,
@@ -264,6 +338,17 @@ fun DireccionScreen(
                 label = { Text("Teléfono") },
                 modifier = Modifier.fillMaxWidth(),
                 isError = direccionViewModel.telefonoError != null,
+                colors = TextFieldDefaults.colors(
+                    focusedTextColor = Color.White,
+                    unfocusedTextColor = Color.White,
+                    cursorColor = Color.White,
+                    focusedLabelColor = Color.White,
+                    unfocusedLabelColor = Color.White,
+                    focusedIndicatorColor = Color.White,
+                    unfocusedIndicatorColor = Color.White,
+                    focusedPlaceholderColor = Color.White.copy(alpha = 0.7f),
+                    unfocusedPlaceholderColor = Color.White.copy(alpha = 0.7f)
+                ),
 
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Phone,
@@ -303,19 +388,17 @@ fun DireccionScreen(
             }
 
             // Botón de guardar
-            Button(
-                onClick = { 
+            GradientButton(
+                text = "Continuar con el pago",
+                onClick = {
                     currentUserEmail?.let { email ->
                         direccionViewModel.guardarDireccion(email)
                     }
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(50.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-            ) {
-                Text("Continuar con el pago", color = Color.White)
-            }
+                    .height(50.dp)
+            )
             
             Spacer(modifier = Modifier.height(16.dp))
         }

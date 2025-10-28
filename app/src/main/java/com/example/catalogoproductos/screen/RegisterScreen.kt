@@ -19,6 +19,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.catalogoproductos.viewmodel.RegisterViewModel
+import androidx.compose.material3.TextFieldDefaults
+import com.example.catalogoproductos.components.GradientButton
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -29,6 +31,8 @@ fun RegisterScreen(
     val scrollState = rememberScrollState()
 
     Scaffold(
+        containerColor = androidx.compose.ui.graphics.Color.Transparent,
+        contentColor = MaterialTheme.colorScheme.onBackground,
         topBar = {
             TopAppBar(
                 title = { Text("Registro de Usuario") },
@@ -36,7 +40,12 @@ fun RegisterScreen(
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = androidx.compose.ui.graphics.Color.Transparent,
+                    titleContentColor = MaterialTheme.colorScheme.primary,
+                    navigationIconContentColor = MaterialTheme.colorScheme.secondary
+                )
             )
         }
     ) { paddingValues ->
@@ -60,7 +69,16 @@ fun RegisterScreen(
                     keyboardType = KeyboardType.Text,
                     imeAction = ImeAction.Next
                 ),
-                singleLine = true
+                singleLine = true,
+                colors = TextFieldDefaults.colors(
+                    focusedTextColor = Color.White,
+                    unfocusedTextColor = Color.White,
+                    cursorColor = MaterialTheme.colorScheme.secondary,
+                    focusedLabelColor = Color.White,
+                    unfocusedLabelColor = Color.White.copy(alpha = 0.7f),
+                    focusedIndicatorColor = MaterialTheme.colorScheme.primary,
+                    unfocusedIndicatorColor = MaterialTheme.colorScheme.secondary
+                )
             )
             registerViewModel.nombreError?.let {
                 Text(
@@ -82,7 +100,16 @@ fun RegisterScreen(
                     keyboardType = KeyboardType.Text,
                     imeAction = ImeAction.Next
                 ),
-                singleLine = true
+                singleLine = true,
+                colors = TextFieldDefaults.colors(
+                    focusedTextColor = Color.White,
+                    unfocusedTextColor = Color.White,
+                    cursorColor = MaterialTheme.colorScheme.secondary,
+                    focusedLabelColor = Color.White,
+                    unfocusedLabelColor = Color.White.copy(alpha = 0.7f),
+                    focusedIndicatorColor = MaterialTheme.colorScheme.primary,
+                    unfocusedIndicatorColor = MaterialTheme.colorScheme.secondary
+                )
             )
             registerViewModel.apellidoError?.let {
                 Text(
@@ -104,7 +131,16 @@ fun RegisterScreen(
                     keyboardType = KeyboardType.Email,
                     imeAction = ImeAction.Next
                 ),
-                singleLine = true
+                singleLine = true,
+                colors = TextFieldDefaults.colors(
+                    focusedTextColor = Color.White,
+                    unfocusedTextColor = Color.White,
+                    cursorColor = MaterialTheme.colorScheme.secondary,
+                    focusedLabelColor = Color.White,
+                    unfocusedLabelColor = Color.White.copy(alpha = 0.7f),
+                    focusedIndicatorColor = MaterialTheme.colorScheme.primary,
+                    unfocusedIndicatorColor = MaterialTheme.colorScheme.secondary
+                )
             )
             registerViewModel.emailError?.let {
                 Text(
@@ -126,7 +162,16 @@ fun RegisterScreen(
                     keyboardType = KeyboardType.Text,
                     imeAction = ImeAction.Next
                 ),
-                singleLine = true
+                singleLine = true,
+                colors = TextFieldDefaults.colors(
+                    focusedTextColor = Color.White,
+                    unfocusedTextColor = Color.White,
+                    cursorColor = MaterialTheme.colorScheme.secondary,
+                    focusedLabelColor = Color.White,
+                    unfocusedLabelColor = Color.White.copy(alpha = 0.7f),
+                    focusedIndicatorColor = MaterialTheme.colorScheme.primary,
+                    unfocusedIndicatorColor = MaterialTheme.colorScheme.secondary
+                )
             )
             registerViewModel.direccionError?.let {
                 Text(
@@ -148,7 +193,16 @@ fun RegisterScreen(
                     keyboardType = KeyboardType.Phone,
                     imeAction = ImeAction.Next
                 ),
-                singleLine = true
+                singleLine = true,
+                colors = TextFieldDefaults.colors(
+                    focusedTextColor = Color.White,
+                    unfocusedTextColor = Color.White,
+                    cursorColor = MaterialTheme.colorScheme.secondary,
+                    focusedLabelColor = Color.White,
+                    unfocusedLabelColor = Color.White.copy(alpha = 0.7f),
+                    focusedIndicatorColor = MaterialTheme.colorScheme.primary,
+                    unfocusedIndicatorColor = MaterialTheme.colorScheme.secondary
+                )
             )
             registerViewModel.telefonoError?.let {
                 Text(
@@ -173,7 +227,16 @@ fun RegisterScreen(
                     label = { Text("Región") },
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedRegion) },
                     isError = registerViewModel.regionError != null,
-                    modifier = Modifier.menuAnchor().fillMaxWidth()
+                    modifier = Modifier.menuAnchor().fillMaxWidth(),
+                    colors = TextFieldDefaults.colors(
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        cursorColor = MaterialTheme.colorScheme.secondary,
+                        focusedLabelColor = Color.White,
+                        unfocusedLabelColor = Color.White.copy(alpha = 0.7f),
+                        focusedIndicatorColor = MaterialTheme.colorScheme.primary,
+                        unfocusedIndicatorColor = MaterialTheme.colorScheme.secondary
+                    )
                 )
                 ExposedDropdownMenu(
                     expanded = expandedRegion,
@@ -216,7 +279,16 @@ fun RegisterScreen(
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedComuna) },
                     isError = registerViewModel.comunaError != null,
                     enabled = comunas.isNotEmpty(),
-                    modifier = Modifier.menuAnchor().fillMaxWidth()
+                    modifier = Modifier.menuAnchor().fillMaxWidth(),
+                    colors = TextFieldDefaults.colors(
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        cursorColor = MaterialTheme.colorScheme.secondary,
+                        focusedLabelColor = Color.White,
+                        unfocusedLabelColor = Color.White.copy(alpha = 0.7f),
+                        focusedIndicatorColor = MaterialTheme.colorScheme.primary,
+                        unfocusedIndicatorColor = MaterialTheme.colorScheme.secondary
+                    )
                 )
                 ExposedDropdownMenu(
                     expanded = expandedComuna,
@@ -261,7 +333,16 @@ fun RegisterScreen(
                     keyboardType = KeyboardType.Text,
                     imeAction = ImeAction.Next
                 ),
-                singleLine = true
+                singleLine = true,
+                colors = TextFieldDefaults.colors(
+                    focusedTextColor = Color.White,
+                    unfocusedTextColor = Color.White,
+                    cursorColor = MaterialTheme.colorScheme.secondary,
+                    focusedLabelColor = Color.White,
+                    unfocusedLabelColor = Color.White.copy(alpha = 0.7f),
+                    focusedIndicatorColor = MaterialTheme.colorScheme.primary,
+                    unfocusedIndicatorColor = MaterialTheme.colorScheme.secondary
+                )
             )
             registerViewModel.rutError?.let {
                 Text(
@@ -284,7 +365,16 @@ fun RegisterScreen(
                     keyboardType = KeyboardType.Password,
                     imeAction = ImeAction.Next
                 ),
-                singleLine = true
+                singleLine = true,
+                colors = TextFieldDefaults.colors(
+                    focusedTextColor = Color.White,
+                    unfocusedTextColor = Color.White,
+                    cursorColor = MaterialTheme.colorScheme.secondary,
+                    focusedLabelColor = Color.White,
+                    unfocusedLabelColor = Color.White.copy(alpha = 0.7f),
+                    focusedIndicatorColor = MaterialTheme.colorScheme.primary,
+                    unfocusedIndicatorColor = MaterialTheme.colorScheme.secondary
+                )
             )
             registerViewModel.passwordError?.let {
                 Text(
@@ -307,7 +397,16 @@ fun RegisterScreen(
                     keyboardType = KeyboardType.Password,
                     imeAction = ImeAction.Done
                 ),
-                singleLine = true
+                singleLine = true,
+                colors = TextFieldDefaults.colors(
+                    focusedTextColor = Color.White,
+                    unfocusedTextColor = Color.White,
+                    cursorColor = MaterialTheme.colorScheme.secondary,
+                    focusedLabelColor = Color.White,
+                    unfocusedLabelColor = Color.White.copy(alpha = 0.7f),
+                    focusedIndicatorColor = MaterialTheme.colorScheme.primary,
+                    unfocusedIndicatorColor = MaterialTheme.colorScheme.secondary
+                )
             )
             registerViewModel.confirmPasswordError?.let {
                 Text(
@@ -319,7 +418,8 @@ fun RegisterScreen(
             }
 
             // Botón de registro
-            Button(
+            GradientButton(
+                text = "Registrarse",
                 onClick = {
                     val ok = registerViewModel.register()
                     if (ok) {
@@ -332,11 +432,8 @@ fun RegisterScreen(
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(50.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-            ) {
-                Text("Registrarse", color = Color.White)
-            }
+                    .height(50.dp)
+            )
 
             // Enlace para ir a login (eliminado por duplicado y confusión)
 
@@ -350,7 +447,7 @@ fun RegisterScreen(
                     restoreState = false
                 }
             }) {
-                Text("¿Ya tienes una cuenta? Inicia sesión")
+                Text("¿Ya tienes una cuenta? Inicia sesión", color = Color.White)
             }
             
             Spacer(modifier = Modifier.height(16.dp))

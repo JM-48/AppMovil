@@ -5,7 +5,11 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.Surface
+import androidx.compose.ui.graphics.Color
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -31,7 +35,18 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             CatalogoProductosTheme {
-                Surface(color = MaterialTheme.colorScheme.background) {
+                // Fondo degradado azul marino → negro
+                Box(
+                    modifier = Modifier
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(
+                                    com.example.catalogoproductos.ui.theme.NavyBlue,
+                                    Color.Black
+                                )
+                            )
+                        )
+                ) {
                     val navController = androidx.navigation.compose.rememberNavController()
 
                     // Base de datos y repositorios (recordados para evitar recreación en recomposición)
@@ -48,6 +63,7 @@ class MainActivity : ComponentActivity() {
                     var title by remember { mutableStateOf("Catálogo de Productos") }
 
                     Scaffold(
+                        containerColor = Color.Transparent,
                         topBar = {
                             MiTopBar(
                                 title = title,

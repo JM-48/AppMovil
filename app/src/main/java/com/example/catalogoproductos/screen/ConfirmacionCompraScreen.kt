@@ -20,6 +20,7 @@ import com.example.catalogoproductos.viewmodel.PerfilUsuarioViewModel
 import com.example.catalogoproductos.model.PerfilUsuario
 
 import androidx.compose.material3.*
+import com.example.catalogoproductos.components.GradientButton
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -42,14 +43,32 @@ fun ConfirmacionCompraScreen(
     var estadoCompra by remember { mutableStateOf<EstadoCompra>(EstadoCompra.EnProceso) }
     
     Scaffold(
+        containerColor = Color.Transparent,
+        contentColor = Color.White,
         topBar = {
             TopAppBar(
-                title = { Text("Confirmación de Compra") },
+                title = {
+                    Text(
+                        "Confirmación de Compra",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
+                        Icon(
+                            Icons.Default.ArrowBack,
+                            contentDescription = "Volver",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.Transparent,
+                    titleContentColor = MaterialTheme.colorScheme.primary,
+                    navigationIconContentColor = MaterialTheme.colorScheme.primary,
+                    actionIconContentColor = MaterialTheme.colorScheme.secondary
+                )
             )
         }
     ) { paddingValues ->
@@ -266,21 +285,15 @@ fun ResumenCompraContent(
         }
     }
     
-    Button(
+    GradientButton(
+        text = "Confirmar Compra",
         onClick = onCompraClick,
         modifier = Modifier
             .fillMaxWidth()
             .height(50.dp),
         enabled = itemsCarrito.isNotEmpty() && (direccion != null || perfilFallback != null),
-        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-    ) {
-        Icon(
-            Icons.Default.ShoppingCart,
-            contentDescription = "Confirmar compra",
-            modifier = Modifier.padding(end = 8.dp)
-        )
-        Text("Confirmar Compra", color = Color.White)
-    }
+        icon = Icons.Default.ShoppingCart
+    )
 }
 
 @Composable
@@ -306,12 +319,13 @@ fun CompraRealizadaContent(navController: NavController) {
             text = "Gracias por tu compra. Recibirás un correo con los detalles de tu pedido.",
             fontSize = 16.sp,
             modifier = Modifier.padding(horizontal = 16.dp),
-            color = Color.Gray
+            color = Color.White
         )
         
         Spacer(modifier = Modifier.height(32.dp))
         
-        Button(
+        GradientButton(
+            text = "Volver al Catálogo",
             onClick = { 
                 navController.navigate("catalogo") {
                     popUpTo("catalogo") { inclusive = true }
@@ -320,9 +334,7 @@ fun CompraRealizadaContent(navController: NavController) {
             modifier = Modifier
                 .fillMaxWidth()
                 .height(50.dp)
-        ) {
-            Text("Volver al Catálogo")
-        }
+        )
     }
 }
 
@@ -352,7 +364,7 @@ fun CompraRechazadaContent(
             text = "Lo sentimos, no se pudo procesar tu pago. Por favor, verifica tus datos e intenta nuevamente.",
             fontSize = 16.sp,
             modifier = Modifier.padding(horizontal = 16.dp),
-            color = Color.Gray
+            color = Color.White
         )
         
         Spacer(modifier = Modifier.height(32.dp))
@@ -361,17 +373,17 @@ fun CompraRechazadaContent(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
-            Button(
+            GradientButton(
+                text = "Reintentar",
                 onClick = onReintentar,
                 modifier = Modifier
                     .weight(1f)
                     .height(50.dp)
                     .padding(end = 8.dp)
-            ) {
-                Text("Reintentar")
-            }
+            )
             
-            Button(
+            GradientButton(
+                text = "Cancelar",
                 onClick = { 
                     navController.navigate("catalogo") {
                         popUpTo("catalogo") { inclusive = true }
@@ -381,9 +393,7 @@ fun CompraRechazadaContent(
                     .weight(1f)
                     .height(50.dp)
                     .padding(start = 8.dp)
-            ) {
-                Text("Cancelar")
-            }
+            )
         }
     }
 }

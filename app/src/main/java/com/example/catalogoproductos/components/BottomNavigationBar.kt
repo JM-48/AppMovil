@@ -8,12 +8,15 @@ import androidx.compose.material.icons.filled.Work
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.compose.ui.graphics.Color
+import androidx.compose.material3.MaterialTheme
 
 data class BottomNavItem(
     val name: String,
@@ -58,7 +61,7 @@ fun BottomNavigationBar(
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
-    NavigationBar {
+    NavigationBar(containerColor = Color.Transparent) {
         items.forEach { item ->
             // Si el elemento requiere autenticación y el usuario no está autenticado, no lo mostramos
             if (!item.requiresAuth || isUserLoggedIn) {
@@ -66,6 +69,13 @@ fun BottomNavigationBar(
                     icon = { Icon(item.icon, contentDescription = item.name) },
                     label = { Text(text = item.name) },
                     selected = currentRoute == item.route,
+                    colors = NavigationBarItemDefaults.colors(
+                        selectedIconColor = MaterialTheme.colorScheme.primary,
+                        selectedTextColor = MaterialTheme.colorScheme.primary,
+                        indicatorColor = MaterialTheme.colorScheme.primary,
+                        unselectedIconColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+                        unselectedTextColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                    ),
                     onClick = {
                         if (currentRoute != item.route) {
                             navController.navigate(item.route) {

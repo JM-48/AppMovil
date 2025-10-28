@@ -27,6 +27,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 import androidx.compose.material3.ExperimentalMaterial3Api
+import com.example.catalogoproductos.components.GradientButton
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -47,9 +48,17 @@ fun CarritoScreen(
     var actionInProgress by remember { mutableStateOf(false) }
 
     Scaffold(
+        containerColor = Color.Transparent,
+        contentColor = Color.White,
         topBar = {
             TopAppBar(
-                title = { Text("Carrito de Compras") },
+                title = {
+                    Text(
+                        "Carrito de Compras",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = {
                         val popped = navController.popBackStack()
@@ -60,7 +69,11 @@ fun CarritoScreen(
                             }
                         }
                     }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
+                        Icon(
+                            Icons.Default.ArrowBack,
+                            contentDescription = "Volver",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
                     }
                 },
                 actions = {
@@ -89,10 +102,16 @@ fun CarritoScreen(
                             },
                             enabled = !actionInProgress
                         ) {
-                            Text("Vaciar")
+                            Text("Vaciar", color = MaterialTheme.colorScheme.secondary)
                         }
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.Transparent,
+                    titleContentColor = MaterialTheme.colorScheme.primary,
+                    navigationIconContentColor = MaterialTheme.colorScheme.primary,
+                    actionIconContentColor = MaterialTheme.colorScheme.secondary
+                )
             )
         },
         snackbarHost = {
@@ -103,12 +122,12 @@ fun CarritoScreen(
                         TextButton(onClick = { data.performAction() }) {
                             Text(
                                 text = data.visuals.actionLabel ?: "",
-                                color = MaterialTheme.colorScheme.primary
+                                color = Color.White
                             )
                         }
                     }
                 ) {
-                    Text(data.visuals.message)
+                    Text(data.visuals.message, color = Color.White)
                 }
             }
         }
@@ -143,18 +162,12 @@ fun CarritoScreen(
                                 color = Color.Gray
                             )
                             Spacer(modifier = Modifier.height(8.dp))
-                            Button(
+                            GradientButton(
+                                text = "Ir a comprar",
                                 onClick = { navController.navigate("catalogo") },
-                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-                            ) {
-                                Icon(
-                                    Icons.Default.ShoppingBasket,
-                                    contentDescription = "Ir a comprar",
-                                    modifier = Modifier.size(20.dp)
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text("Ir a comprar", color = Color.White)
-                            }
+                                modifier = Modifier.width(200.dp).height(50.dp),
+                                icon = Icons.Default.ShoppingBasket
+                            )
                         }
                     }
                 } else if (!isLoading) {
@@ -226,8 +239,9 @@ fun CarritoScreen(
                                 )
                             }
                             Spacer(modifier = Modifier.height(16.dp))
-                            Button(
-                                onClick = { 
+                            GradientButton(
+                                text = "Proceder al pago",
+                                onClick = {
                                     scope.launch {
                                         isLoading = true
                                         delay(800) // Simular carga
@@ -238,17 +252,9 @@ fun CarritoScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(50.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                                enabled = !isLoading && !actionInProgress
-                            ) {
-                                Icon(
-                                    Icons.Default.Payment,
-                                    contentDescription = "Proceder al pago",
-                                    modifier = Modifier.size(20.dp)
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text("Proceder al pago", color = Color.White)
-                            }
+                                enabled = !isLoading && !actionInProgress,
+                                icon = Icons.Default.Payment
+                            )
                         }
                     }
                 }

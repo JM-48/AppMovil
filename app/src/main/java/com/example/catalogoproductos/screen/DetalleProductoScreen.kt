@@ -21,6 +21,8 @@ import com.example.catalogoproductos.viewmodel.CarritoViewModel
 import com.example.catalogoproductos.viewmodel.AuthViewModel
 import coil.compose.rememberAsyncImagePainter
 import kotlinx.coroutines.launch
+import androidx.compose.ui.graphics.Color
+import com.example.catalogoproductos.components.GradientButton
 
 @Composable
 fun DetalleProductoScreen(
@@ -45,11 +47,17 @@ fun DetalleProductoScreen(
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(text = "Producto no encontrado", style = MaterialTheme.typography.titleMedium)
+            Text(
+                text = "Producto no encontrado",
+                style = MaterialTheme.typography.titleMedium,
+                color = Color.White
+            )
             Spacer(modifier = Modifier.height(16.dp))
-            Button(onClick = { navController.popBackStack() }) {
-                Text("Volver")
-            }
+            GradientButton(
+                text = "Volver",
+                onClick = { navController.popBackStack() },
+                modifier = Modifier.fillMaxWidth().height(50.dp)
+            )
         }
         return
     }
@@ -66,11 +74,26 @@ fun DetalleProductoScreen(
             contentDescription = producto.nombre,
             modifier = Modifier.size(200.dp)
         )
-        Text(text = producto.nombre, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-        Text(text = producto.descripcion ?: "", style = MaterialTheme.typography.bodyMedium)
-        Text(text = "Precio: ${com.example.catalogoproductos.util.CurrencyUtils.formatCLP(producto.precio)}", style = MaterialTheme.typography.titleMedium)
+        Text(
+            text = producto.nombre,
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold,
+            color = Color.White
+        )
+        Text(
+            text = producto.descripcion ?: "",
+            style = MaterialTheme.typography.bodyMedium,
+            color = Color.White
+        )
+        Text(
+            text = "Precio: ${com.example.catalogoproductos.util.CurrencyUtils.formatCLP(producto.precio)}",
+            style = MaterialTheme.typography.titleMedium,
+            color = Color.White
+        )
 
-        Button(onClick = {
+        GradientButton(
+            text = "Agregar al Carrito",
+            onClick = {
             currentUserEmail?.let { email ->
                 val item = ItemCarrito(
                     productoId = producto.id,
@@ -85,19 +108,21 @@ fun DetalleProductoScreen(
             } ?: run {
                 scope.launch { snackbarHostState.showSnackbar("Debes iniciar sesión para agregar al carrito") }
             }
-        }) {
-            Text("Agregar al Carrito")
-        }
+            },
+            modifier = Modifier.fillMaxWidth().height(50.dp)
+        )
 
-        Button(onClick = {
+        GradientButton(
+            text = "Ir al Carrito",
+            onClick = {
             currentUserEmail?.let { _ ->
                 navController.navigate("carrito")
             } ?: run {
                 scope.launch { snackbarHostState.showSnackbar("Debes iniciar sesión para ver tu carrito") }
             }
-        }) {
-            Text("Ir al Carrito")
-        }
+            },
+            modifier = Modifier.fillMaxWidth().height(50.dp)
+        )
 
         SnackbarHost(hostState = snackbarHostState)
     }
