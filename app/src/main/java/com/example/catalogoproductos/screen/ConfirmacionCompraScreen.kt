@@ -41,6 +41,7 @@ fun ConfirmacionCompraScreen(
     }
     
     var estadoCompra by remember { mutableStateOf<EstadoCompra>(EstadoCompra.EnProceso) }
+    var intentosConfirmacion by remember { mutableStateOf(0) }
     
     Scaffold(
         containerColor = Color.Transparent,
@@ -76,13 +77,13 @@ fun ConfirmacionCompraScreen(
                         direccion = direccionDefault,
                         perfilFallback = perfilFallback,
                         onCompraClick = {
-                            // Simulamos una validación de pago
-                            val compraExitosa = (Math.random() > 0.3) // 70% de probabilidad de éxito
-                            if (compraExitosa) {
+                            // Lógica determinista: primera confirmación falla, segunda y siguientes exitosas
+                            if (intentosConfirmacion == 0) {
+                                estadoCompra = EstadoCompra.Rechazada
+                                intentosConfirmacion++
+                            } else {
                                 estadoCompra = EstadoCompra.Exitosa
                                 carritoViewModel.limpiarCarrito(email)
-                            } else {
-                                estadoCompra = EstadoCompra.Rechazada
                             }
                         }
                     )

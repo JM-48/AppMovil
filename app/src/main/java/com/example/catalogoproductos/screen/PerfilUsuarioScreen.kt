@@ -57,6 +57,7 @@ import kotlinx.coroutines.launch
 import android.app.Activity
 import android.content.Intent
 import com.example.catalogoproductos.MainActivity
+import android.widget.Toast
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -463,6 +464,10 @@ fun PerfilUsuarioScreen(
                     text = "Cerrar sesión",
                     onClick = {
                         authViewModel.logout()
+                        // Mostrar feedback por Toast sin emojis
+                        val cleanMsg = authViewModel.mensaje.value.replace(Regex("[^\\p{L}\\p{N}\\p{P}\\p{Z}]"), "").trim()
+                        Toast.makeText(context, cleanMsg, Toast.LENGTH_SHORT).show()
+                        authViewModel.mensaje.value = ""
                         navController.navigate("login") {
                             popUpTo(navController.graph.startDestinationId) { inclusive = true }
                             launchSingleTop = true

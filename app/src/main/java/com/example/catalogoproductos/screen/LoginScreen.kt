@@ -12,20 +12,22 @@ import java.util.regex.Pattern
 import androidx.compose.ui.graphics.Color
 import com.example.catalogoproductos.components.GradientButton
 import androidx.compose.material3.TextFieldDefaults
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
 
 @Composable
 fun LoginScreen(navController: NavController, viewModel: AuthViewModel) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var emailError by remember { mutableStateOf<String?>(null) }
-
-    val snackbarHostState = remember { SnackbarHostState() }
+    val context = LocalContext.current
 
     // Mostrar mensajes como pop-up (Snackbar) cuando cambie el mensaje del ViewModel
     LaunchedEffect(viewModel.mensaje.value) {
         val msg = viewModel.mensaje.value
         if (msg.isNotBlank()) {
-            snackbarHostState.showSnackbar(message = msg, duration = SnackbarDuration.Short)
+            val cleanMsg = msg.replace(Regex("[^\\p{L}\\p{N}\\p{P}\\p{Z}]"), "").trim()
+            Toast.makeText(context, cleanMsg, Toast.LENGTH_SHORT).show()
             // Limpiar mensaje para no repetirlo en recomposiciones
             viewModel.mensaje.value = ""
         }
@@ -50,20 +52,7 @@ fun LoginScreen(navController: NavController, viewModel: AuthViewModel) {
 
     Scaffold(
         containerColor = androidx.compose.ui.graphics.Color.Transparent,
-        contentColor = MaterialTheme.colorScheme.onBackground,
-        snackbarHost = {
-            SnackbarHost(hostState = snackbarHostState) { data ->
-                Snackbar(
-                    action = {
-                        data.visuals.actionLabel?.let { label ->
-                            TextButton(onClick = { data.performAction() }) { Text(label) }
-                        }
-                    }
-                ) {
-                    Text(data.visuals.message, color = Color.White)
-                }
-            }
-        }
+        contentColor = MaterialTheme.colorScheme.onBackground
     ) { paddingValues ->
         Column(
             modifier = Modifier

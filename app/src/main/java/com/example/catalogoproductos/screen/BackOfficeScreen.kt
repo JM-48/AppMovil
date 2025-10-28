@@ -33,6 +33,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.ui.layout.ContentScale
 import coil.compose.rememberAsyncImagePainter
 import androidx.compose.ui.draw.clip
+import android.widget.Toast
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -77,7 +78,8 @@ fun BackOfficeScreen(
     LaunchedEffect(authViewModel.mensaje.value, authViewModel.usuarioActual.value, authViewModel.esAdministrador.value) {
         val msg = authViewModel.mensaje.value
         if (authViewModel.usuarioActual.value != null && authViewModel.esAdministrador.value && msg.isNotBlank()) {
-            snackbarHostState.showSnackbar(message = msg, duration = SnackbarDuration.Short)
+            val cleanMsg = msg.replace(Regex("[^\\p{L}\\p{N}\\p{P}\\p{Z}]"), "").trim()
+            Toast.makeText(context, cleanMsg, Toast.LENGTH_SHORT).show()
             authViewModel.mensaje.value = ""
         }
     }

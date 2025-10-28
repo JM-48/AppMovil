@@ -28,9 +28,9 @@ class AuthViewModel : ViewModel() {
     fun registrar(nombre: String, email: String, password: String) {
         val nuevo = Usuario(nombre, email, password)
         if (FakeDatabase.registrar(nuevo)) {
-            mensaje.value = "Registro exitoso ✅"
+            mensaje.value = "Registro exitoso"
         } else {
-            mensaje.value = "El usuario ya existe ❌"
+            mensaje.value = "El usuario ya existe"
         }
     }
 
@@ -39,7 +39,7 @@ class AuthViewModel : ViewModel() {
         if (FakeDatabase.loginAdministrador(email, password)) {
             usuarioActual.value = email
             esAdministrador.value = true
-            mensaje.value = "Inicio de sesión como administrador 🔐"
+            mensaje.value = "Inicio de sesión como administrador"
             return true
         }
         
@@ -47,10 +47,10 @@ class AuthViewModel : ViewModel() {
         return if (FakeDatabase.login(email, password)) {
             usuarioActual.value = email
             esAdministrador.value = false
-            mensaje.value = "Inicio de sesión exitoso 🎉"
+            mensaje.value = "Inicio de sesión exitoso"
             true
         } else {
-            mensaje.value = "Credenciales inválidas ❌"
+            mensaje.value = "Credenciales inválidas"
             false
         }
     }
