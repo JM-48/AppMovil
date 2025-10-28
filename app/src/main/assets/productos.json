@@ -3,6 +3,7 @@
     "id": 1,
     "nombre": "Laptop Lenovo",
     "descripcion": "Laptop 14\" - 8GB RAM - 256GB SSD",
+    "tipo":  "Notebook",
     "precio": 799990,
     "imagen": "https://p3-ofp.static.pub//fes/cms/2024/04/29/ikn2t6lun9udtvltruq2e6lp6yb30g570931.png",
     "stock": 15
@@ -11,6 +12,7 @@
     "id": 2,
     "nombre": "Mouse Logitech",
     "descripcion": "Mouse inalámbrico, sensor 1600 DPI",
+    "tipo":  "Mouse",
     "precio": 25550,
     "imagen": "https://cdnx.jumpseller.com/smart-tech/image/18848391/D_NQ_NP_2X_798029-MLA45377518559_032021-F.webp?1714699718",
     "stock": 120
@@ -19,6 +21,7 @@
     "id": 3,
     "nombre": "Auriculares",
     "descripcion": "Auriculares Bluetooth con cancelación de ruido",
+    "tipo":  "Auriculares",
     "precio": 59990,
     "imagen": "https://media.spdigital.cl/thumbnails/products/53_teu5s_b63b51ea_thumbnail_512.png",
     "stock": 60
@@ -28,7 +31,72 @@
     "nombre": "Teclado mecánico",
     "descripcion": "Teclado compacto, switches azules",
     "precio": 39000,
+    "tipo":  "Teclado",
     "imagen": "https://m.media-amazon.com/images/I/71FSIp+tDNL._AC_SL1500_.jpg",
     "stock": 35
+  },
+  {
+    "id": 5,
+    "nombre": "Monitor LG 24\"",
+    "descripcion": "Monitor 24 pulgadas, 75Hz, IPS",
+    "tipo": "Monitor",
+    "precio": 129990,
+    "imagen": "https://www.lg.com/content/dam/channel/wcms/cl/images/monitores/24ms500-b/gallery/fhd-24ms500-gallery-01-2010.jpg/jcr:content/renditions/thum-1600x1062.jpeg?w=800",
+    "stock": 40
+  },
+  {
+    "id": 6,
+    "nombre": "Impresora HP DeskJet",
+    "descripcion": "Multifuncional tinta a color",
+    "tipo": "Impresora",
+    "precio": 79990,
+    "imagen": "https://cl-media.hptiendaenlinea.com/catalog/product/cache/b3b166914d87ce343d4dc5ec5117b502/6/0/60K46A-1_T1712943001.png",
+    "stock": 25
+  },
+  {
+    "id": 7,
+    "nombre": "SSD Kingston 480GB",
+    "descripcion": "2.5\" SATA, 520MB/s",
+    "tipo": "Almacenamiento",
+    "precio": 59990,
+    "imagen": "https://media.solotodo.com/media/products/596745_picture_1490303275.jpg",
+    "stock": 80
+  },
+
+  {
+    "id": 8,
+    "nombre": "Parlantes Logitech Z200",
+    "descripcion": "2.0, 10W",
+    "tipo": "Parlantes",
+    "precio": 39990,
+    "imagen": "https://m.media-amazon.com/images/I/71jUD4a0YUL._AC_SX466_.jpg",
+    "stock": 70
+  },
+  {
+    "id": 9,
+    "nombre": "Cámara Web Full HD",
+    "descripcion": "1080p con micrófono",
+    "tipo": "Cámara",
+    "precio": 29990,
+    "imagen": "https://media.spdigital.cl/thumbnails/products/k3wwv6ok_43eaecba_thumbnail_512.jpg",
+    "stock": 90
+  },
+  {
+    "id": 10,
+    "nombre": "Silla Gamer",
+    "descripcion": "Ergonómica, respaldo alto",
+    "tipo": "Accesorios",
+    "precio": 159990,
+    "imagen": "https://media.falabella.com/falabellaCL/140987040_01/w=1500,h=1500,fit=pad",
+    "stock": 20
+  },
+  {
+    "id": 11,
+    "nombre": "Memoria RAM 16GB DDR4",
+    "descripcion": "3200MHz, CL16",
+    "tipo": "Memoria",
+    "precio": 69990,
+    "imagen": "https://media.spdigital.cl/thumbnails/products/kmz8y561_c53c8933_thumbnail_4096.jpg",
+    "stock": 55
   }
 ]

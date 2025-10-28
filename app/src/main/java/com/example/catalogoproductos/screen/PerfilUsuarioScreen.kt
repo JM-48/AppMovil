@@ -74,43 +74,6 @@ fun PerfilUsuarioScreen(
     Scaffold(
         containerColor = Color.Transparent,
         contentColor = Color.White,
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        "Mi Perfil",
-                        style = MaterialTheme.typography.titleLarge,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = {
-                        val popped = navController.popBackStack()
-                        if (!popped) {
-                            navController.navigate("catalogo") {
-                                popUpTo("catalogo") { inclusive = true }
-                                launchSingleTop = true
-                            }
-                        }
-                    }) {
-                        Icon(
-                            Icons.Default.ArrowBack,
-                            contentDescription = "Volver",
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                },
-                actions = {
-                    // Sin acciones adicionales para simplificar la UI
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Transparent,
-                    titleContentColor = MaterialTheme.colorScheme.primary,
-                    navigationIconContentColor = MaterialTheme.colorScheme.primary,
-                    actionIconContentColor = MaterialTheme.colorScheme.secondary
-                )
-            )
-        },
         snackbarHost = {
             SnackbarHost(hostState = snackbarHostState) { data ->
                 Snackbar(

@@ -3,6 +3,8 @@ package com.example.catalogoproductos.screen
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -20,7 +22,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.graphics.Color
 import com.example.catalogoproductos.components.GradientButton
+import com.example.catalogoproductos.repository.CategoriaRepository
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CatalogoScreen(
     navController: NavController,
@@ -71,6 +75,64 @@ fun CatalogoScreen(
 
             Spacer(modifier = Modifier.height(12.dp))
 
+            var searchText by rememberSaveable { mutableStateOf("") }
+            var expanded by rememberSaveable { mutableStateOf(false) }
+            var selectedCategory by rememberSaveable { mutableStateOf("Todas") }
+            var categorias by rememberSaveable { mutableStateOf(listOf("Todas")) }
+            LaunchedEffect(Unit) {
+                val repoCat = CategoriaRepository()
+                val loaded = repoCat.obtenerCategoriasDesdeAssets(context)
+                categorias = listOf("Todas") + loaded
+            }
+            TextField(
+                value = searchText,
+                onValueChange = { searchText = it },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                placeholder = { Text("Buscar por nombre") }
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            ExposedDropdownMenuBox(
+                expanded = expanded,
+                onExpandedChange = { expanded = !expanded },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                TextField(
+                    value = selectedCategory,
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("Categoría") },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                    colors = ExposedDropdownMenuDefaults.textFieldColors(),
+                    modifier = Modifier.menuAnchor().fillMaxWidth()
+                )
+                ExposedDropdownMenu(
+                    expanded = expanded,
+                    onDismissRequest = { expanded = false }
+                ) {
+                    categorias.forEach { cat ->
+                        DropdownMenuItem(
+                            text = { Text(cat) },
+                            onClick = {
+                                selectedCategory = cat
+                                expanded = false
+                            }
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            val productosPorCategoria = if (selectedCategory == "Todas") productos else productos.filter {
+                it.tipo?.equals(selectedCategory, ignoreCase = true) ?: false
+            }
+            val productosFiltrados = productosPorCategoria.filter {
+                searchText.isBlank() || it.nombre.contains(searchText, ignoreCase = true)
+            }
+
             if (productos.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator()
@@ -81,7 +143,7 @@ fun CatalogoScreen(
                     contentPadding = PaddingValues(vertical = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    items(productos) { producto ->
+                    items(productosFiltrados) { producto ->
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()

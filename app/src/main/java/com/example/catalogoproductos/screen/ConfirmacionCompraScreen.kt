@@ -44,33 +44,7 @@ fun ConfirmacionCompraScreen(
     
     Scaffold(
         containerColor = Color.Transparent,
-        contentColor = Color.White,
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        "Confirmación de Compra",
-                        style = MaterialTheme.typography.titleLarge,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(
-                            Icons.Default.ArrowBack,
-                            contentDescription = "Volver",
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Transparent,
-                    titleContentColor = MaterialTheme.colorScheme.primary,
-                    navigationIconContentColor = MaterialTheme.colorScheme.primary,
-                    actionIconContentColor = MaterialTheme.colorScheme.secondary
-                )
-            )
-        }
+        contentColor = Color.White
     ) { paddingValues ->
         Column(
             modifier = Modifier

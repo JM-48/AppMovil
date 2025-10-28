@@ -65,10 +65,13 @@ class MainActivity : ComponentActivity() {
                     Scaffold(
                         containerColor = Color.Transparent,
                         topBar = {
+                            val navBackStackEntry by navController.currentBackStackEntryAsState()
+                            val currentRoute = navBackStackEntry?.destination?.route
+                            val showBack = currentRoute !in listOf("catalogo", "login")
                             MiTopBar(
                                 title = title,
                                 navController = navController,
-                                showBackButton = false,
+                                showBackButton = showBack,
                                 isUserLoggedIn = authViewModel.usuarioActual.value != null
                             )
                         },
