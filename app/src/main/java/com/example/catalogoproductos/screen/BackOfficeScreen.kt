@@ -17,6 +17,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -40,6 +41,7 @@ fun BackOfficeScreen(
     viewModel: BackOfficeViewModel,
     authViewModel: AuthViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
 ) {
+    val context = LocalContext.current
     val productos by viewModel.productos.collectAsState()
     val productoSeleccionado by viewModel.productoSeleccionado.collectAsState()
     val guardadoExitoso by viewModel.guardadoExitoso.collectAsState()
@@ -53,7 +55,12 @@ fun BackOfficeScreen(
     // Estado para el diálogo de confirmación de eliminación
     var showDeleteDialog by remember { mutableStateOf(false) }
     var productoAEliminar by remember { mutableStateOf<Producto?>(null) }
-    
+
+    // Cargar productos desde assets al abrir BackOffice
+    LaunchedEffect(Unit) {
+        viewModel.cargarProductosDesdeAssets(context)
+    }
+
     LaunchedEffect(guardadoExitoso) {
         if (guardadoExitoso) {
             snackbarHostState.showSnackbar(
@@ -240,6 +247,18 @@ fun FormularioTab(viewModel: BackOfficeViewModel) {
                 keyboardType = KeyboardType.Text,
                 imeAction = ImeAction.Next
             )
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        OutlinedTextField(
+            value = viewModel.tipo,
+            onValueChange = { viewModel.updateTipo(it) },
+            label = { Text("Categoría") },
+            modifier = Modifier.fillMaxWidth(),
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Text,
+                imeAction = ImeAction.Next
+            ),
+            singleLine = true
         )
         Spacer(modifier = Modifier.height(8.dp))
         OutlinedTextField(

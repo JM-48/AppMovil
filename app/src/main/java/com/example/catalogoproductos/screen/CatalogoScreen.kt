@@ -5,6 +5,11 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.material3.ExperimentalMaterial3Api
+// Removed ExperimentalFoundationApi import as animateItemPlacement is no longer used
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.core.tween
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -15,6 +20,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.Image
 import androidx.compose.ui.layout.ContentScale
 import coil.compose.rememberAsyncImagePainter
+import coil.request.ImageRequest
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.background
@@ -23,6 +29,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.graphics.Color
 import com.example.catalogoproductos.components.GradientButton
 import com.example.catalogoproductos.repository.CategoriaRepository
+import androidx.compose.animation.animateContentSize
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -154,6 +161,7 @@ fun CatalogoScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(12.dp)
+                                    .animateContentSize()
                             ) {
                                 // Imagen grande con precio arriba a la derecha
                                 Box(
@@ -161,8 +169,12 @@ fun CatalogoScreen(
                                         .fillMaxWidth()
                                         .height(220.dp)
                                 ) {
+                                    val imageModel = ImageRequest.Builder(context)
+                                        .data(producto.imagen ?: "")
+                                        .crossfade(true)
+                                        .build()
                                     Image(
-                                        painter = rememberAsyncImagePainter(producto.imagen ?: ""),
+                                        painter = rememberAsyncImagePainter(model = imageModel),
                                         contentDescription = producto.nombre,
                                         modifier = Modifier.fillMaxSize(),
                                         contentScale = ContentScale.Crop
@@ -191,12 +203,18 @@ fun CatalogoScreen(
                                     fontWeight = FontWeight.Bold
                                 )
                                 val descripcion = producto.descripcion ?: ""
-                                if (descripcion.isNotBlank()) {
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Text(
-                                        text = descripcion,
-                                        style = MaterialTheme.typography.bodyMedium
-                                    )
+                                AnimatedVisibility(
+                                    visible = descripcion.isNotBlank(),
+                                    enter = fadeIn(animationSpec = tween(250)),
+                                    exit = fadeOut(animationSpec = tween(200))
+                                ) {
+                                    Column {
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(
+                                            text = descripcion,
+                                            style = MaterialTheme.typography.bodyMedium
+                                        )
+                                    }
                                 }
 
                                 Spacer(modifier = Modifier.height(12.dp))

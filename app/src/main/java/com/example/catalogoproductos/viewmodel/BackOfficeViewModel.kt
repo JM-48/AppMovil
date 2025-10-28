@@ -1,16 +1,15 @@
 package com.example.catalogoproductos.viewmodel
 
+import android.content.Context
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import com.example.catalogoproductos.model.Producto
-import com.example.catalogoproductos.model.FakeDatabase
+import com.example.catalogoproductos.repository.ProductoRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
 
 class BackOfficeViewModel : ViewModel() {
 
@@ -34,8 +33,7 @@ class BackOfficeViewModel : ViewModel() {
         private set
     var imagen by mutableStateOf("")
         private set
-    // El modelo actual no tiene categoría, se elimina su estado
-    // var categoria by mutableStateOf("")
+    var tipo by mutableStateOf("")
 
     // Estados de error
     var nombreError by mutableStateOf<String?>(null)
@@ -48,16 +46,13 @@ class BackOfficeViewModel : ViewModel() {
         private set
     var imagenError by mutableStateOf<String?>(null)
         private set
-    // var categoriaError by mutableStateOf<String?>(null)
+    var tipoError by mutableStateOf<String?>(null)
     var errorMessage by mutableStateOf("")
         private set
 
-    init {
-        cargarProductos()
-    }
-
-    fun cargarProductos() {
-        _productos.value = FakeDatabase.getProductos()
+    fun cargarProductosDesdeAssets(context: Context) {
+        val repo = ProductoRepository()
+        _productos.value = repo.obtenerProductosDesdeAssets(context)
     }
 
     fun seleccionarProducto(producto: Producto) {
@@ -67,6 +62,7 @@ class BackOfficeViewModel : ViewModel() {
         precio = producto.precio.toString()
         stock = producto.stock.toString()
         imagen = producto.imagen ?: ""
+        tipo = producto.tipo ?: ""
         limpiarErrores()
     }
 
@@ -77,6 +73,7 @@ class BackOfficeViewModel : ViewModel() {
         precio = ""
         stock = ""
         imagen = ""
+        tipo = ""
         limpiarErrores()
     }
 
@@ -85,6 +82,7 @@ class BackOfficeViewModel : ViewModel() {
     fun updatePrecio(value: String) { precio = value; validarPrecio() }
     fun updateStock(value: String) { stock = value; validarStock() }
     fun updateImagen(value: String) { imagen = value; validarImagen() }
+    fun updateTipo(value: String) { tipo = value; validarTipo() }
 
     fun guardarProducto() {
         if (validarFormulario()) {
@@ -92,23 +90,25 @@ class BackOfficeViewModel : ViewModel() {
                 val precioInt = precio.toInt()
                 val stockInt = stock.toInt()
 
-                val producto = Producto(
+                val baseProducto = Producto(
                     id = _productoSeleccionado.value?.id ?: 0,
                     nombre = nombre,
                     descripcion = if (descripcion.isBlank()) null else descripcion,
                     precio = precioInt,
                     imagen = if (imagen.isBlank()) null else imagen,
-                    stock = stockInt
+                    stock = stockInt,
+                    tipo = if (tipo.isBlank()) null else tipo
                 )
 
                 if (_productoSeleccionado.value == null) {
-                    FakeDatabase.agregarProducto(producto)
+                    val nuevoId = if (_productos.value.isEmpty()) 1 else (_productos.value.maxOf { it.id } + 1)
+                    val nuevo = baseProducto.copy(id = nuevoId)
+                    _productos.value = listOf(nuevo) + _productos.value
                 } else {
-                    FakeDatabase.actualizarProducto(producto)
+                    _productos.value = _productos.value.map { if (it.id == baseProducto.id) baseProducto else it }
                 }
 
                 _guardadoExitoso.value = true
-                cargarProductos()
             } catch (e: Exception) {
                 errorMessage = "Error al guardar el producto: ${e.message}"
             }
@@ -116,8 +116,7 @@ class BackOfficeViewModel : ViewModel() {
     }
 
     fun eliminarProducto(id: Int) {
-        FakeDatabase.eliminarProducto(id)
-        cargarProductos()
+        _productos.value = _productos.value.filter { it.id != id }
         if (_productoSeleccionado.value?.id == id) {
             nuevoProducto()
         }
@@ -133,6 +132,7 @@ class BackOfficeViewModel : ViewModel() {
         if (!validarPrecio()) isValid = false
         if (!validarStock()) isValid = false
         if (!validarImagen()) isValid = false
+        if (!validarTipo()) isValid = false
         return isValid
     }
 
@@ -157,7 +157,7 @@ class BackOfficeViewModel : ViewModel() {
         return when {
             precio.isBlank() -> { precioError = "El precio es obligatorio"; false }
             p == null -> { precioError = "El precio debe ser un entero"; false }
-            p <= 0 -> { precioError = "El precio debe ser mayor que cero"; false }
+            p < 1000 || p > 10_000_000 -> { precioError = "El precio debe estar entre $1.000 y $10.000.000"; false }
             else -> { precioError = null; true }
         }
     }
@@ -174,10 +174,16 @@ class BackOfficeViewModel : ViewModel() {
 
     private fun validarImagen(): Boolean {
         return when {
-            imagen.isBlank() -> { imagenError = "La URL de la imagen es obligatoria"; false }
-            !imagen.startsWith("http") -> { imagenError = "La URL debe comenzar con http:// o https://"; false }
+            imagen.isBlank() -> { imagenError = null; true } // opcional
+            !(imagen.startsWith("http://") || imagen.startsWith("https://")) -> { imagenError = "La URL debe comenzar con http:// o https://"; false }
             else -> { imagenError = null; true }
         }
+    }
+
+    private fun validarTipo(): Boolean {
+        // La categoría (tipo) es opcional en BackOffice
+        tipoError = null
+        return true
     }
 
     private fun limpiarErrores() {
@@ -186,6 +192,7 @@ class BackOfficeViewModel : ViewModel() {
         precioError = null
         stockError = null
         imagenError = null
+        tipoError = null
         errorMessage = ""
     }
 }
