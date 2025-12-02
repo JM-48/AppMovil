@@ -31,7 +31,7 @@ class CatalogoViewModel(
             _loading.value = true
             _error.value = null
             try {
-                val list = repo.obtenerProductosDesdeAssets(context)
+                val list = repo.obtenerProductosDesdeApi()
                 _productos.value = list
             } catch (e: Exception) {
                 _error.value = "Error al cargar productos: ${e.message}"
@@ -46,8 +46,7 @@ class CatalogoViewModel(
             _refreshing.value = true
             _error.value = null
             try {
-                delay(800) // Simular tiempo de carga en red
-                val list = repo.obtenerProductosDesdeAssets(context)
+                val list = repo.obtenerProductosDesdeApi()
                 _productos.value = list
             } catch (e: Exception) {
                 _error.value = "Error al actualizar productos: ${e.message}"

@@ -169,8 +169,12 @@ fun CatalogoScreen(
                                         .fillMaxWidth()
                                         .height(220.dp)
                                 ) {
+                                    fun normalizeUrl(u: String?): String {
+                                        if (u.isNullOrBlank()) return ""
+                                        return if (u.startsWith("http://") || u.startsWith("https://")) u else "https://apitest-1-95ny.onrender.com/" + if (u.startsWith("/")) u.drop(1) else u
+                                    }
                                     val imageModel = ImageRequest.Builder(context)
-                                        .data(producto.imagen ?: "")
+                                        .data(normalizeUrl(producto.imagen))
                                         .crossfade(true)
                                         .build()
                                     Image(

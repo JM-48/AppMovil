@@ -72,6 +72,13 @@ fun PerfilUsuarioScreen(
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
 
+    LaunchedEffect(guardadoExitoso) {
+        if (guardadoExitoso) {
+            Toast.makeText(context, "Perfil actualizado correctamente", Toast.LENGTH_SHORT).show()
+            perfilViewModel.resetGuardadoExitoso()
+        }
+    }
+
     Scaffold(
         containerColor = Color.Transparent,
         contentColor = Color.White,
@@ -440,20 +447,15 @@ fun PerfilUsuarioScreen(
                     )
                 }
 
-                // Mensaje de éxito
-                if (guardadoExitoso) {
-                    Text(
-                        text = "Perfil actualizado correctamente",
-                        color = Color.Green,
-                        style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.align(Alignment.CenterHorizontally)
-                    )
-                }
+                
 
                 // Botón de guardar
                 GradientButton(
                     text = "Guardar Cambios",
-                    onClick = { perfilViewModel.guardarPerfil() },
+                    onClick = {
+                        val tk = authViewModel.token.value ?: ""
+                        perfilViewModel.actualizarPerfilRemoto(tk)
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(50.dp)

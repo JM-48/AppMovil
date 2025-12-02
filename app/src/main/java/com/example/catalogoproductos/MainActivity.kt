@@ -203,13 +203,21 @@ class MainActivity : ComponentActivity() {
                                     navController.navigate("login")
                                 }
                             }
-                            composable("backoffice") {
-                                title = "Página de Admin"
+                            composable("backoffice_productos") {
+                                title = "Admin Productos"
                                 val backOfficeViewModel = viewModel<BackOfficeViewModel>()
                                 if (authViewModel.esAdministrador.value) {
                                     BackOfficeScreen(navController, backOfficeViewModel, authViewModel)
                                 } else {
-                                    // Si no es administrador, redirigir al login
+                                    navController.navigate("login")
+                                }
+                            }
+                            composable("backoffice_usuarios") {
+                                title = "Admin Usuarios"
+                                val usuariosViewModel = viewModel<UsuariosViewModel>()
+                                if (authViewModel.esAdministrador.value) {
+                                    BackOfficeUsuariosScreen(navController, usuariosViewModel, authViewModel)
+                                } else {
                                     navController.navigate("login")
                                 }
                             }

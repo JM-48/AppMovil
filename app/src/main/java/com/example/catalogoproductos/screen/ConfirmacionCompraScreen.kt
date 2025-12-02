@@ -21,6 +21,9 @@ import com.example.catalogoproductos.model.PerfilUsuario
 
 import androidx.compose.material3.*
 import com.example.catalogoproductos.components.GradientButton
+import androidx.compose.ui.platform.LocalContext
+import android.widget.Toast
+import com.example.catalogoproductos.model.ItemCarrito
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -35,6 +38,7 @@ fun ConfirmacionCompraScreen(
     val itemsCarrito by carritoViewModel.itemsCarrito.collectAsState(initial = emptyList())
     val totalCarrito by carritoViewModel.totalCarrito.collectAsState(initial = com.example.catalogoproductos.util.CurrencyUtils.formatCLP(0))
     val direccionDefault by direccionViewModel.direccionDefault.collectAsState(initial = null)
+    val context = LocalContext.current
 
     LaunchedEffect(email) {
         direccionViewModel.cargarDireccionDefault(email)
@@ -42,6 +46,11 @@ fun ConfirmacionCompraScreen(
     
     var estadoCompra by remember { mutableStateOf<EstadoCompra>(EstadoCompra.EnProceso) }
     var intentosConfirmacion by remember { mutableStateOf(0) }
+    var boletaItems by remember { mutableStateOf<List<ItemCarrito>>(emptyList()) }
+    var boletaTotal by remember { mutableStateOf("") }
+    var boletaNombre by remember { mutableStateOf("") }
+    var boletaApellido by remember { mutableStateOf("") }
+    var boletaDireccion by remember { mutableStateOf("") }
     
     Scaffold(
         containerColor = Color.Transparent,
@@ -82,6 +91,20 @@ fun ConfirmacionCompraScreen(
                                 estadoCompra = EstadoCompra.Rechazada
                                 intentosConfirmacion++
                             } else {
+                                boletaItems = itemsCarrito
+                                boletaTotal = totalCarrito
+                                boletaNombre = perfilUsuarioViewModel.nombre
+                                boletaApellido = perfilUsuarioViewModel.apellido
+                                boletaDireccion = when {
+                                    direccionDefault != null -> {
+                                        val d = direccionDefault
+                                        "${d!!.calle} ${d.numero}, ${d.ciudad}, ${d.provincia}, ${d.codigoPostal}"
+                                    }
+                                    perfilFallback != null -> {
+                                        "${perfilFallback.direccion}, ${perfilFallback.ciudad}, ${perfilFallback.codigoPostal}"
+                                    }
+                                    else -> "No disponible"
+                                }
                                 estadoCompra = EstadoCompra.Exitosa
                                 carritoViewModel.limpiarCarrito(email)
                             }
@@ -89,7 +112,14 @@ fun ConfirmacionCompraScreen(
                     )
                 }
                 EstadoCompra.Exitosa -> {
-                    CompraRealizadaContent(navController)
+                    CompraRealizadaContent(
+                        navController = navController,
+                        nombre = boletaNombre,
+                        apellido = boletaApellido,
+                        direccionEnvio = boletaDireccion,
+                        items = boletaItems,
+                        total = boletaTotal
+                    )
                 }
                 EstadoCompra.Rechazada -> {
                     CompraRechazadaContent(
@@ -272,7 +302,14 @@ fun ResumenCompraContent(
 }
 
 @Composable
-fun CompraRealizadaContent(navController: NavController) {
+fun CompraRealizadaContent(
+    navController: NavController,
+    nombre: String,
+    apellido: String,
+    direccionEnvio: String,
+    items: List<ItemCarrito>,
+    total: String
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -280,6 +317,10 @@ fun CompraRealizadaContent(navController: NavController) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
+        val context = LocalContext.current
+        LaunchedEffect(Unit) {
+            Toast.makeText(context, "Compra exitosa", Toast.LENGTH_SHORT).show()
+        }
         Spacer(modifier = Modifier.height(16.dp))
         
         Text(
@@ -297,6 +338,44 @@ fun CompraRealizadaContent(navController: NavController) {
             color = Color.White
         )
         
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Card(
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                modifier = Modifier
+                    .padding(16.dp)
+                    .fillMaxWidth()
+            ) {
+                Text(text = "Boleta", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                Divider(modifier = Modifier.padding(vertical = 8.dp))
+                Text(text = "Nombre: $nombre $apellido")
+                Text(text = "Dirección de envío: $direccionEnvio")
+                Divider(modifier = Modifier.padding(vertical = 8.dp))
+                Text(text = "Detalle de productos", fontWeight = FontWeight.Bold)
+                items.forEach { item ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(text = "${item.nombre} x${item.cantidad}")
+                        Text(text = com.example.catalogoproductos.util.CurrencyUtils.formatCLP(item.precio * item.cantidad))
+                    }
+                }
+                Divider(modifier = Modifier.padding(vertical = 8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(text = "Total", fontWeight = FontWeight.Bold)
+                    Text(text = total, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                }
+            }
+        }
+
         Spacer(modifier = Modifier.height(32.dp))
         
         GradientButton(

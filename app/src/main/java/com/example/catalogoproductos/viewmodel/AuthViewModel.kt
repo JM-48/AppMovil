@@ -2,62 +2,51 @@ package com.example.catalogoproductos.viewmodel
 
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
-import com.example.catalogoproductos.model.FakeDatabase
-import com.example.catalogoproductos.model.Usuario
-import com.example.catalogoproductos.model.Administrador
+import androidx.lifecycle.viewModelScope
+import com.example.catalogoproductos.repository.AuthRepository
+import kotlinx.coroutines.launch
 
 class AuthViewModel : ViewModel() {
 
     var mensaje = mutableStateOf("")
     var usuarioActual = mutableStateOf<String?>(null)
     var esAdministrador = mutableStateOf(false)
+    var token = mutableStateOf<String?>(null)
+    var role = mutableStateOf<String?>(null)
 
-    init {
-        // Crear un administrador por defecto si no existe
-        if (!FakeDatabase.existeAdministrador("admin@catalogo.com")) {
-            FakeDatabase.registrarAdministrador(
-                Administrador(
-                    email = "admin@catalogo.com",
-                    password = "admin123",
-                    nombre = "Administrador"
-                )
-            )
-        }
-    }
+    private val repo = AuthRepository()
 
     fun registrar(nombre: String, email: String, password: String) {
-        val nuevo = Usuario(nombre, email, password)
-        if (FakeDatabase.registrar(nuevo)) {
-            mensaje.value = "Registro exitoso"
-        } else {
-            mensaje.value = "El usuario ya existe"
-        }
+        mensaje.value = "Usa el formulario de registro"
     }
 
-    fun login(email: String, password: String): Boolean {
-        // Primero verificamos si es un administrador
-        if (FakeDatabase.loginAdministrador(email, password)) {
-            usuarioActual.value = email
-            esAdministrador.value = true
-            mensaje.value = "Inicio de sesión como administrador"
-            return true
-        }
-        
-        // Si no es administrador, verificamos si es un usuario normal
-        return if (FakeDatabase.login(email, password)) {
-            usuarioActual.value = email
-            esAdministrador.value = false
-            mensaje.value = "Inicio de sesión exitoso"
-            true
-        } else {
-            mensaje.value = "Credenciales inválidas"
-            false
+    fun login(email: String, password: String) {
+        viewModelScope.launch {
+            try {
+                val resp = repo.login(email, password)
+                val tk = resp.token
+                if (tk.isNullOrBlank()) {
+                    mensaje.value = "Login sin token"
+                    return@launch
+                }
+                token.value = tk
+                // Obtener perfil con rol
+                val me = repo.me(tk)
+                usuarioActual.value = me.email ?: email
+                role.value = me.role ?: resp.role
+                esAdministrador.value = (role.value?.equals("ADMIN", ignoreCase = true) == true)
+                mensaje.value = if (esAdministrador.value) "Inicio de sesión como administrador" else "Inicio de sesión exitoso"
+            } catch (e: Exception) {
+                mensaje.value = "Credenciales inválidas: ${e.message}".replace("\n", " ")
+            }
         }
     }
 
     fun logout() {
         usuarioActual.value = null
         esAdministrador.value = false
+        token.value = null
+        role.value = null
         mensaje.value = "Sesión cerrada"
     }
 }

@@ -8,6 +8,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.ViewModelProvider
 import com.example.catalogoproductos.repository.PerfilUsuarioRepository
+import com.example.catalogoproductos.repository.AuthRepository
 import com.example.catalogoproductos.repository.RegionComunaRepository
 import com.example.catalogoproductos.model.PerfilUsuario
 import com.example.catalogoproductos.model.FakeDatabase
@@ -17,7 +18,7 @@ import java.util.regex.Pattern
 
 class RegisterViewModel(
     private val perfilRepo: PerfilUsuarioRepository,
-    private val context: Context
+    private val appContext: Context
 ) : ViewModel() {
     var nombre by mutableStateOf("")
     var apellido by mutableStateOf("")
@@ -26,7 +27,7 @@ class RegisterViewModel(
     var confirmPassword by mutableStateOf("")
     var direccion by mutableStateOf("")
     var telefono by mutableStateOf("")
-    var rut by mutableStateOf("")
+    var codigoPostal by mutableStateOf("")
 
     var nombreError by mutableStateOf<String?>(null)
     var apellidoError by mutableStateOf<String?>(null)
@@ -35,15 +36,17 @@ class RegisterViewModel(
     var confirmPasswordError by mutableStateOf<String?>(null)
     var direccionError by mutableStateOf<String?>(null)
     var telefonoError by mutableStateOf<String?>(null)
-    var rutError by mutableStateOf<String?>(null)
+    var codigoPostalError by mutableStateOf<String?>(null)
 
     var region by mutableStateOf("")
     var comuna by mutableStateOf("")
     var regionError by mutableStateOf<String?>(null)
     var comunaError by mutableStateOf<String?>(null)
+    var registroExitoso by mutableStateOf(false)
+    var mensaje by mutableStateOf("")
 
     private val regionComunaRepo = RegionComunaRepository()
-    val regionesYComunas = regionComunaRepo.cargarDesdeAssets(context)
+    val regionesYComunas = regionComunaRepo.cargarDesdeAssets(appContext)
 
     fun validateNombre() {
         nombreError = when {
@@ -103,8 +106,12 @@ class RegisterViewModel(
             else -> null
         }
     }
-    fun validateRut() {
-        rutError = if (rut.isBlank()) "RUT es obligatorio" else null
+    fun validateCodigoPostal() {
+        codigoPostalError = when {
+            codigoPostal.isBlank() -> "El código postal es obligatorio"
+            codigoPostal.length != 5 || !codigoPostal.all { it.isDigit() } -> "El código postal debe tener 5 dígitos"
+            else -> null
+        }
     }
 
     fun validateRegion() {
@@ -155,12 +162,12 @@ class RegisterViewModel(
         telefono = value
         validateTelefono()
     }
-    fun updateRut(value: String) {
-        rut = value
-        validateRut()
+    fun updateCodigoPostal(value: String) {
+        codigoPostal = value
+        validateCodigoPostal()
     }
 
-    fun register(): Boolean {
+    fun register() {
         validateNombre()
         validateApellido()
         validateEmail()
@@ -168,44 +175,57 @@ class RegisterViewModel(
         validateConfirmPassword()
         validateDireccion()
         validateTelefono()
-        validateRut()
+        validateCodigoPostal()
         validateRegion()
         validateComuna()
 
         val noErrors = listOf(
             nombreError, apellidoError, emailError, passwordError, confirmPasswordError,
-            direccionError, telefonoError, rutError, regionError, comunaError
+            direccionError, telefonoError, codigoPostalError, regionError, comunaError
         ).all { it == null }
 
-        if (!noErrors) return false
-
-        // Registrar usuario en memoria (evita duplicados automáticamente)
-        val registrado = FakeDatabase.registrar(
-            Usuario(
-                nombre = "$nombre $apellido",
-                email = email,
-                password = password
-            )
-        )
-        if (!registrado) {
-            emailError = "El email ya está registrado"
-            return false
+        if (!noErrors) {
+            mensaje = "Formulario inválido"
+            registroExitoso = false
+            return
         }
 
-        val perfil = PerfilUsuario(
+        // Consumir endpoint /auth/register
+        val req = AuthRepository.RegisterRequest(
             email = email,
+            password = password,
             nombre = nombre,
             apellido = apellido,
             telefono = telefono,
             direccion = direccion,
             ciudad = comuna,
-            codigoPostal = ""
+            codigoPostal = codigoPostal,
+            role = "USER"
         )
-        // Guardar perfil en background
         viewModelScope.launch {
+            try {
+                val authRepo = AuthRepository()
+                authRepo.register(req)
+                mensaje = "Registro exitoso"
+                registroExitoso = true
+            } catch (e: Exception) {
+                emailError = (e.message ?: "Error de registro").replace("\n", " ")
+                mensaje = emailError ?: "Error de registro"
+                registroExitoso = false
+                return@launch
+            }
+
+            val perfil = PerfilUsuario(
+                email = email,
+                nombre = nombre,
+                apellido = apellido,
+                telefono = telefono,
+                direccion = direccion,
+                ciudad = comuna,
+                codigoPostal = codigoPostal
+            )
             perfilRepo.guardarPerfil(perfil)
         }
-        return true
     }
 
     class Factory(

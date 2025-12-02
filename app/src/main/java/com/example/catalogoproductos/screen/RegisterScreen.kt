@@ -21,6 +21,8 @@ import androidx.navigation.NavController
 import com.example.catalogoproductos.viewmodel.RegisterViewModel
 import androidx.compose.material3.TextFieldDefaults
 import com.example.catalogoproductos.components.GradientButton
+import androidx.compose.ui.platform.LocalContext
+import android.widget.Toast
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -307,15 +309,15 @@ fun RegisterScreen(
                 )
             }
             
-            // RUT
+            // Código Postal
             OutlinedTextField(
-                value = registerViewModel.rut,
-                onValueChange = { registerViewModel.updateRut(it) },
-                label = { Text("RUT") },
+                value = registerViewModel.codigoPostal,
+                onValueChange = { registerViewModel.updateCodigoPostal(it) },
+                label = { Text("Código Postal") },
                 modifier = Modifier.fillMaxWidth(),
-                isError = registerViewModel.rutError != null,
+                isError = registerViewModel.codigoPostalError != null,
                 keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Text,
+                    keyboardType = KeyboardType.Number,
                     imeAction = ImeAction.Next
                 ),
                 singleLine = true,
@@ -329,7 +331,7 @@ fun RegisterScreen(
                     unfocusedIndicatorColor = MaterialTheme.colorScheme.secondary
                 )
             )
-            registerViewModel.rutError?.let {
+            registerViewModel.codigoPostalError?.let {
                 Text(
                     text = it,
                     color = MaterialTheme.colorScheme.error,
@@ -406,14 +408,7 @@ fun RegisterScreen(
             GradientButton(
                 text = "Registrarse",
                 onClick = {
-                    val ok = registerViewModel.register()
-                    if (ok) {
-                        navController.navigate("login") {
-                            popUpTo(navController.graph.startDestinationId) { inclusive = true }
-                            launchSingleTop = true
-                            restoreState = false
-                        }
-                    }
+                    registerViewModel.register()
                 },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -436,6 +431,22 @@ fun RegisterScreen(
             }
             
             Spacer(modifier = Modifier.height(16.dp))
+        }
+        val context = LocalContext.current
+        LaunchedEffect(registerViewModel.mensaje) {
+            val msg = registerViewModel.mensaje
+            if (msg.isNotBlank()) {
+                Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+            }
+        }
+        LaunchedEffect(registerViewModel.registroExitoso) {
+            if (registerViewModel.registroExitoso) {
+                navController.navigate("login") {
+                    popUpTo(navController.graph.startDestinationId) { inclusive = true }
+                    launchSingleTop = true
+                    restoreState = false
+                }
+            }
         }
     }
 }

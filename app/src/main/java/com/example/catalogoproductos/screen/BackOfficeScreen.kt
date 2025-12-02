@@ -34,6 +34,11 @@ import androidx.compose.ui.layout.ContentScale
 import coil.compose.rememberAsyncImagePainter
 import androidx.compose.ui.draw.clip
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.FileProvider
+import android.util.Log
+import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -51,7 +56,7 @@ fun BackOfficeScreen(
     
     // Estado para controlar qué pestaña está activa
     var tabIndex by remember { mutableStateOf(0) }
-    val tabs = listOf("Productos", "Formulario")
+    val tabs = listOf("Productos", "Crear producto", "Editar producto")
     
     // Estado para el diálogo de confirmación de eliminación
     var showDeleteDialog by remember { mutableStateOf(false) }
@@ -74,6 +79,15 @@ fun BackOfficeScreen(
         }
     }
 
+    LaunchedEffect(viewModel.productoStatusMessage) {
+        val msg = viewModel.productoStatusMessage
+        if (msg.isNotBlank()) {
+            val cleanMsg = msg.replace(Regex("[^\\p{L}\\p{N}\\p{P}\\p{Z}]"), "").trim()
+            Toast.makeText(context, cleanMsg, Toast.LENGTH_SHORT).show()
+            viewModel.clearProductoStatusMessage()
+        }
+    }
+
     // Mostrar mensaje de inicio de sesión de administrador al entrar
     LaunchedEffect(authViewModel.mensaje.value, authViewModel.usuarioActual.value, authViewModel.esAdministrador.value) {
         val msg = authViewModel.mensaje.value
@@ -87,26 +101,29 @@ fun BackOfficeScreen(
     Scaffold(
         containerColor = Color.Transparent,
         contentColor = MaterialTheme.colorScheme.onBackground,
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
-        floatingActionButton = {
-            if (tabIndex == 0) {
-                FloatingActionButton(
-                    onClick = {
-                        viewModel.nuevoProducto()
-                        tabIndex = 1
-                    },
-                    containerColor = MaterialTheme.colorScheme.primary
-                ) {
-                    Icon(Icons.Default.Add, contentDescription = "Añadir producto")
-                }
-            }
-        }
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
     ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
+            if (showDeleteDialog && productoAEliminar != null) {
+                AlertDialog(
+                    onDismissRequest = { showDeleteDialog = false },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            viewModel.eliminarProducto(productoAEliminar!!.id)
+                            showDeleteDialog = false
+                        }) { Text("Eliminar") }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showDeleteDialog = false }) { Text("Cancelar") }
+                    },
+                    title = { Text("Confirmar eliminación") },
+                    text = { Text("¿Deseas eliminar '${productoAEliminar!!.nombre}'?") }
+                )
+            }
             // Pestañas
             TabRow(
                 selectedTabIndex = tabIndex,
@@ -117,11 +134,28 @@ fun BackOfficeScreen(
                     Tab(
                         text = { Text(title) },
                         selected = tabIndex == index,
-                        onClick = { tabIndex = index },
+                        onClick = {
+                            when (index) {
+                                0 -> tabIndex = 0
+                                1 -> {
+                                    viewModel.nuevoProducto()
+                                    tabIndex = 1
+                                }
+                                2 -> {
+                                    val seleccionado = productoSeleccionado
+                                    if (seleccionado != null) {
+                                        tabIndex = 2
+                                    } else {
+                                        Toast.makeText(context, "Selecciona un producto para editar", Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                            }
+                        },
                         icon = {
                             Icon(
                                 imageVector = when (index) {
                                     0 -> Icons.Default.List
+                                    1 -> Icons.Default.Edit
                                     else -> Icons.Default.Edit
                                 },
                                 contentDescription = title
@@ -137,14 +171,26 @@ fun BackOfficeScreen(
                     productos = productos,
                     onProductoClick = { 
                         viewModel.seleccionarProducto(it)
-                        tabIndex = 1
+                        tabIndex = 2
                     },
                     onDeleteClick = { 
                         productoAEliminar = it
                         showDeleteDialog = true
                     }
                 )
-                1 -> FormularioTab(viewModel = viewModel)
+                1 -> FormularioTab(viewModel = viewModel, title = "Crear Producto", isCreate = true)
+                2 -> {
+                    val seleccionado by viewModel.productoSeleccionado.collectAsState()
+                    if (seleccionado != null) {
+                        FormularioTab(viewModel = viewModel, title = "Editar Producto", isCreate = false)
+                    } else {
+                        Text(
+                            text = "Selecciona un producto en la lista para editar",
+                            modifier = Modifier.padding(16.dp),
+                            color = MaterialTheme.colorScheme.onBackground
+                        )
+                    }
+                }
             }
         }
     }
@@ -204,20 +250,44 @@ fun ProductoItem(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun FormularioTab(viewModel: BackOfficeViewModel) {
+fun FormularioTab(viewModel: BackOfficeViewModel, title: String, isCreate: Boolean) {
     val scrollState = rememberScrollState()
+    val context = LocalContext.current
+    var tempImageFile by remember { mutableStateOf<File?>(null) }
+    val takePictureLauncher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { success ->
+        if (success) {
+            tempImageFile?.let { file ->
+                viewModel.updateImagenFile(file)
+                viewModel.updateImagen("")
+                viewModel.subirImagenCapturada()
+            }
+        }
+    }
+    val pickImageLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        uri?.let {
+            try {
+                val input = context.contentResolver.openInputStream(uri)
+                val file = File(context.cacheDir, "galeria_${System.currentTimeMillis()}.jpg")
+                input?.use { ins ->
+                    file.outputStream().use { outs ->
+                        ins.copyTo(outs)
+                    }
+                }
+                viewModel.updateImagenFile(file)
+                viewModel.updateImagen("")
+                viewModel.subirImagenCapturada()
+            } catch (_: Exception) { }
+        }
+    }
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp)
             .verticalScroll(scrollState)
     ) {
-        Text(
-            text = "Formulario de Producto",
-            fontSize = 20.sp,
-            fontWeight = FontWeight.Bold
-        )
+        Text(text = title, fontSize = 20.sp, fontWeight = FontWeight.Bold)
         Spacer(modifier = Modifier.height(16.dp))
         OutlinedTextField(
             value = viewModel.nombre,
@@ -239,7 +309,7 @@ fun FormularioTab(viewModel: BackOfficeViewModel) {
                 modifier = Modifier.align(Alignment.Start)
             )
         }
-        Spacer(modifier = Modifier.height(8.dp))
+        
         OutlinedTextField(
             value = viewModel.descripcion,
             onValueChange = { viewModel.updateDescripcion(it) },
@@ -251,17 +321,40 @@ fun FormularioTab(viewModel: BackOfficeViewModel) {
             )
         )
         Spacer(modifier = Modifier.height(8.dp))
-        OutlinedTextField(
-            value = viewModel.tipo,
-            onValueChange = { viewModel.updateTipo(it) },
-            label = { Text("Categoría") },
-            modifier = Modifier.fillMaxWidth(),
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Text,
-                imeAction = ImeAction.Next
-            ),
-            singleLine = true
-        )
+        val productosState by viewModel.productos.collectAsState()
+        val categorias = productosState.mapNotNull { it.tipo }.filter { it.isNotBlank() }.distinct().sorted()
+        var expanded by remember { mutableStateOf(false) }
+        ExposedDropdownMenuBox(
+            expanded = expanded,
+            onExpandedChange = { expanded = !expanded },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            TextField(
+                value = viewModel.tipo,
+                onValueChange = { viewModel.updateTipo(it) },
+                readOnly = false,
+                label = { Text("Categoría") },
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                modifier = Modifier.menuAnchor().fillMaxWidth(),
+                singleLine = true,
+                enabled = categorias.isNotEmpty()
+            )
+            ExposedDropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false }
+            ) {
+                val filtered = if (viewModel.tipo.isBlank()) categorias else categorias.filter { it.contains(viewModel.tipo, ignoreCase = true) }
+                filtered.forEach { categoria ->
+                    DropdownMenuItem(
+                        text = { Text(categoria) },
+                        onClick = {
+                            viewModel.updateTipo(categoria)
+                            expanded = false
+                        }
+                    )
+                }
+            }
+        }
         Spacer(modifier = Modifier.height(8.dp))
         OutlinedTextField(
             value = viewModel.precio,
@@ -316,9 +409,80 @@ fun FormularioTab(viewModel: BackOfficeViewModel) {
             ),
             singleLine = true
         )
+        Spacer(modifier = Modifier.height(8.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Button(onClick = {
+                val file = File(context.cacheDir, "captura_${System.currentTimeMillis()}.jpg")
+                tempImageFile = file
+                val uri = FileProvider.getUriForFile(context, "com.example.catalogoproductos.fileprovider", file)
+                takePictureLauncher.launch(uri)
+            }) {
+                Icon(Icons.Default.CameraAlt, contentDescription = "Tomar foto")
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Tomar foto")
+            }
+            IconButton(onClick = { pickImageLauncher.launch("image/*") }) {
+                Icon(Icons.Default.Image, contentDescription = "Elegir de galería")
+            }
+            IconButton(onClick = {
+                viewModel.updateImagenFile(null)
+                viewModel.updateImagen("")
+            }) {
+                Icon(Icons.Default.Delete, contentDescription = "Eliminar imagen")
+            }
+        }
+        LaunchedEffect(viewModel.imagenUploadMessage) {
+            val msg = viewModel.imagenUploadMessage
+            if (msg.isNotBlank()) {
+                Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                viewModel.clearImagenUploadMessage()
+            }
+        }
+        LaunchedEffect(viewModel.productoStatusMessage) {
+            val msg = viewModel.productoStatusMessage
+            if (msg.isNotBlank()) {
+                Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                viewModel.clearProductoStatusMessage()
+            }
+        }
+        fun normalizeUrl(u: String?): String {
+            if (u.isNullOrBlank()) return ""
+            return if (u.startsWith("http://") || u.startsWith("https://")) u else "https://apitest-1-95ny.onrender.com/" + if (u.startsWith("/")) u.drop(1) else u
+        }
+        val previewImage = when {
+            viewModel.imagen.isNotBlank() -> normalizeUrl(viewModel.imagen)
+            viewModel.imagenFile != null -> viewModel.imagenFile!!.absolutePath
+            else -> null
+        }
+        previewImage?.let { pathOrUrl ->
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(180.dp)
+                    .clip(RoundedCornerShape(8.dp))
+            ) {
+                Image(
+                    painter = rememberAsyncImagePainter(model = pathOrUrl),
+                    contentDescription = "Preview imagen",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+        }
         Spacer(modifier = Modifier.height(16.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Button(onClick = { viewModel.guardarProducto() }) {
+            Button(onClick = { 
+                Log.d("BackOffice", "Botón Guardar presionado ($title)")
+                if (isCreate) {
+                    viewModel.crearProducto()
+                } else {
+                    viewModel.guardarProducto()
+                }
+            }) {
                 Text("Guardar")
             }
             OutlinedButton(onClick = { viewModel.nuevoProducto() }) {

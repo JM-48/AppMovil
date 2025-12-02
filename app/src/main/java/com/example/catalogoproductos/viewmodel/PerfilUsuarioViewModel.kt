@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.catalogoproductos.model.PerfilUsuario
+import com.example.catalogoproductos.repository.AuthRepository
 import com.example.catalogoproductos.repository.PerfilUsuarioRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -142,7 +143,7 @@ class PerfilUsuarioViewModel(
 
     private fun validarCiudad() {
         ciudadError = when {
-            ciudad.isBlank() -> "La ciudad es obligatoria"
+            ciudad.isBlank() -> "La comuna es obligatoria"
             ciudad.length < 3 -> "La ciudad debe tener al menos 3 caracteres"
             !ciudad.all { it.isLetter() || it.isWhitespace() } -> "La ciudad solo debe contener letras"
             else -> null
@@ -193,6 +194,49 @@ class PerfilUsuarioViewModel(
             }
         } else {
             errorMessage = "Por favor, corrija los errores en el formulario"
+        }
+    }
+
+    fun actualizarPerfilRemoto(token: String) {
+        if (token.isBlank()) {
+            errorMessage = "Token no disponible"
+            _guardadoExitoso.value = false
+            return
+        }
+        if (!validarFormulario()) {
+            errorMessage = "Por favor, corrija los errores en el formulario"
+            _guardadoExitoso.value = false
+            return
+        }
+        viewModelScope.launch {
+            try {
+                val body = mutableMapOf<String, Any?>(
+                    "nombre" to nombre,
+                    "apellido" to apellido,
+                    "telefono" to telefono,
+                    "direccion" to direccion,
+                    "ciudad" to ciudad,
+                    "codigoPostal" to codigoPostal
+                )
+                val authRepo = AuthRepository()
+                authRepo.actualizarMiPerfil(token, body)
+
+                val perfilUsuario = PerfilUsuario(
+                    email = email,
+                    nombre = nombre,
+                    apellido = apellido,
+                    telefono = telefono,
+                    direccion = direccion,
+                    ciudad = ciudad,
+                    codigoPostal = codigoPostal
+                )
+                perfilUsuarioRepository.actualizarPerfil(perfilUsuario)
+                _guardadoExitoso.value = true
+                errorMessage = ""
+            } catch (e: Exception) {
+                errorMessage = "Error al actualizar el perfil: ${e.message}"
+                _guardadoExitoso.value = false
+            }
         }
     }
 

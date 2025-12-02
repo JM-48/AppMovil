@@ -1,15 +1,19 @@
 package com.example.catalogoproductos.viewmodel
 
 import android.content.Context
+import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.example.catalogoproductos.model.Producto
 import com.example.catalogoproductos.repository.ProductoRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import java.io.File
 
 class BackOfficeViewModel : ViewModel() {
 
@@ -35,6 +39,10 @@ class BackOfficeViewModel : ViewModel() {
         private set
     var tipo by mutableStateOf("")
 
+    var imagenFile: File? = null
+    var imagenUploadMessage by mutableStateOf("")
+    var productoStatusMessage by mutableStateOf("")
+
     // Estados de error
     var nombreError by mutableStateOf<String?>(null)
         private set
@@ -52,7 +60,13 @@ class BackOfficeViewModel : ViewModel() {
 
     fun cargarProductosDesdeAssets(context: Context) {
         val repo = ProductoRepository()
-        _productos.value = repo.obtenerProductosDesdeAssets(context)
+        viewModelScope.launch {
+            try {
+                _productos.value = repo.obtenerProductosDesdeApi()
+            } catch (e: Exception) {
+                _productos.value = emptyList()
+            }
+        }
     }
 
     fun seleccionarProducto(producto: Producto) {
@@ -82,6 +96,25 @@ class BackOfficeViewModel : ViewModel() {
     fun updatePrecio(value: String) { precio = value; validarPrecio() }
     fun updateStock(value: String) { stock = value; validarStock() }
     fun updateImagen(value: String) { imagen = value; validarImagen() }
+    fun updateImagenFile(file: File?) { imagenFile = file }
+
+    fun clearImagenUploadMessage() { imagenUploadMessage = "" }
+    fun clearProductoStatusMessage() { productoStatusMessage = "" }
+
+    fun subirImagenCapturada() {
+        val file = imagenFile ?: return
+        viewModelScope.launch {
+            try {
+                val repo = ProductoRepository()
+                val url = repo.subirImagen(file)
+                imagen = url
+                imagenFile = null
+                imagenUploadMessage = "Imagen subida a Cloudinary correctamente"
+            } catch (e: Exception) {
+                errorMessage = "Error al subir imagen: ${e.message}"
+            }
+        }
+    }
     fun updateTipo(value: String) { tipo = value; validarTipo() }
 
     fun guardarProducto() {
@@ -90,35 +123,145 @@ class BackOfficeViewModel : ViewModel() {
                 val precioInt = precio.toInt()
                 val stockInt = stock.toInt()
 
-                val baseProducto = Producto(
-                    id = _productoSeleccionado.value?.id ?: 0,
-                    nombre = nombre,
-                    descripcion = if (descripcion.isBlank()) null else descripcion,
-                    precio = precioInt,
-                    imagen = if (imagen.isBlank()) null else imagen,
-                    stock = stockInt,
-                    tipo = if (tipo.isBlank()) null else tipo
-                )
-
-                if (_productoSeleccionado.value == null) {
-                    val nuevoId = if (_productos.value.isEmpty()) 1 else (_productos.value.maxOf { it.id } + 1)
-                    val nuevo = baseProducto.copy(id = nuevoId)
-                    _productos.value = listOf(nuevo) + _productos.value
-                } else {
-                    _productos.value = _productos.value.map { if (it.id == baseProducto.id) baseProducto else it }
+                viewModelScope.launch {
+                    try {
+                        val repo = ProductoRepository()
+                        productoStatusMessage = "Subiendo producto..."
+                        Log.d("BackOffice", "GuardarProducto: inicio")
+                        Log.d("BackOffice", "Campos: nombre=$nombre, precio=$precioInt, stock=$stockInt, tipo=$tipo, imagenUrl=$imagen, file=${imagenFile?.absolutePath}")
+                        if (_productoSeleccionado.value == null) {
+                            Log.d("BackOffice", "Crear: preparando JSON, subiendo imagen si existe")
+                            if (imagenFile != null) {
+                                Log.d("BackOffice", "Crear: subiendo imagen a /imagenes")
+                                val url = repo.subirImagen(imagenFile!!)
+                                imagen = url
+                                imagenFile = null
+                                imagenUploadMessage = "Imagen subida a Cloudinary correctamente"
+                                Log.d("BackOffice", "Crear: imagen subida, url=$url")
+                            }
+                            val baseProducto = Producto(
+                                id = 0,
+                                nombre = nombre,
+                                descripcion = if (descripcion.isBlank()) null else descripcion,
+                                precio = precioInt,
+                                imagen = if (imagen.isBlank()) null else imagen,
+                                stock = stockInt,
+                                tipo = if (tipo.isBlank()) null else tipo
+                            )
+                            val creado = repo.crearProductoJson(
+                                producto = baseProducto
+                            )
+                            _productos.value = repo.obtenerProductosDesdeApi()
+                            productoStatusMessage = "Producto subido correctamente"
+                            Log.d("BackOffice", "Crear: éxito id=${creado.id}")
+                            imagenFile = null
+                        } else {
+                            Log.d("BackOffice", "Actualizar: preparando payload")
+                            if (imagenFile != null) {
+                                Log.d("BackOffice", "Actualizar: subiendo nueva imagen a /imagenes")
+                                val url = repo.subirImagen(imagenFile!!)
+                                imagen = url
+                                imagenFile = null
+                                imagenUploadMessage = "Imagen subida a Cloudinary correctamente"
+                                Log.d("BackOffice", "Actualizar: imagen subida, url=$url")
+                            }
+                            val baseProducto = Producto(
+                                id = _productoSeleccionado.value?.id ?: 0,
+                                nombre = nombre,
+                                descripcion = if (descripcion.isBlank()) null else descripcion,
+                                precio = precioInt,
+                                imagen = if (imagen.isBlank()) null else imagen,
+                                stock = stockInt,
+                                tipo = if (tipo.isBlank()) null else tipo
+                            )
+                            val actualizado = repo.actualizarProductoJson(
+                                id = baseProducto.id,
+                                producto = baseProducto,
+                                categoriaId = null
+                            )
+                            _productos.value = repo.obtenerProductosDesdeApi()
+                            productoStatusMessage = "Producto actualizado correctamente"
+                            Log.d("BackOffice", "Actualizar: éxito id=${actualizado.id}")
+                        }
+                        _guardadoExitoso.value = true
+                    } catch (e: Exception) {
+                        errorMessage = "Error al guardar el producto: ${e.message}"
+                        _guardadoExitoso.value = false
+                        productoStatusMessage = "Producto no se ha podido subir: ${e.message}"
+                        Log.e("BackOffice", "GuardarProducto: error", e)
+                    }
                 }
-
-                _guardadoExitoso.value = true
             } catch (e: Exception) {
                 errorMessage = "Error al guardar el producto: ${e.message}"
             }
         }
     }
 
+    fun crearProducto() {
+        if (validarFormulario()) {
+            try {
+                val precioInt = precio.toInt()
+                val stockInt = stock.toInt()
+
+                viewModelScope.launch {
+                    try {
+                        val repo = ProductoRepository()
+                        productoStatusMessage = "Subiendo producto..."
+                        Log.d("BackOffice", "CrearProducto: inicio")
+                        Log.d("BackOffice", "Campos: nombre=$nombre, precio=$precioInt, stock=$stockInt, tipo=$tipo, imagenUrl=$imagen, file=${imagenFile?.absolutePath}")
+
+                        if (imagenFile != null) {
+                            Log.d("BackOffice", "CrearProducto: subiendo imagen a /imagenes")
+                            val url = repo.subirImagen(imagenFile!!)
+                            imagen = url
+                            imagenFile = null
+                            imagenUploadMessage = "Imagen subida a Cloudinary correctamente"
+                            Log.d("BackOffice", "CrearProducto: imagen subida, url=$url")
+                        }
+
+                        val baseProducto = Producto(
+                            id = 0,
+                            nombre = nombre,
+                            descripcion = if (descripcion.isBlank()) null else descripcion,
+                            precio = precioInt,
+                            imagen = if (imagen.isBlank()) null else imagen,
+                            stock = stockInt,
+                            tipo = if (tipo.isBlank()) null else tipo
+                        )
+                        val creado = repo.crearProductoJson(
+                            producto = baseProducto
+                        )
+                        _productos.value = repo.obtenerProductosDesdeApi()
+                        productoStatusMessage = "Producto subido correctamente"
+                        Log.d("BackOffice", "CrearProducto: éxito id=${creado.id}")
+                        imagenFile = null
+                        _guardadoExitoso.value = true
+                    } catch (e: Exception) {
+                        errorMessage = "Error al crear el producto: ${e.message}"
+                        _guardadoExitoso.value = false
+                        productoStatusMessage = "Producto no se ha podido subir: ${e.message}"
+                        Log.e("BackOffice", "CrearProducto: error", e)
+                    }
+                }
+            } catch (e: Exception) {
+                errorMessage = "Error al crear el producto: ${e.message}"
+            }
+        }
+    }
+
     fun eliminarProducto(id: Int) {
-        _productos.value = _productos.value.filter { it.id != id }
-        if (_productoSeleccionado.value?.id == id) {
-            nuevoProducto()
+        viewModelScope.launch {
+            try {
+                val repo = ProductoRepository()
+                repo.eliminarProducto(id)
+                _productos.value = repo.obtenerProductosDesdeApi()
+                if (_productoSeleccionado.value?.id == id) {
+                    nuevoProducto()
+                }
+                productoStatusMessage = "Producto eliminado correctamente"
+            } catch (e: Exception) {
+                errorMessage = "Error al eliminar el producto: ${e.message}"
+            }
         }
     }
 
@@ -133,6 +276,13 @@ class BackOfficeViewModel : ViewModel() {
         if (!validarStock()) isValid = false
         if (!validarImagen()) isValid = false
         if (!validarTipo()) isValid = false
+        if (!isValid) {
+            val errs = listOf(nombreError, descripcionError, precioError, stockError, imagenError)
+                .filterNotNull()
+                .joinToString(" | ")
+            productoStatusMessage = if (errs.isBlank()) "Formulario inválido" else "Formulario inválido: $errs"
+            Log.d("BackOffice", "Validación fallida: $errs")
+        }
         return isValid
     }
 

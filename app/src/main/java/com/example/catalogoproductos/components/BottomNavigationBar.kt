@@ -51,10 +51,17 @@ fun BottomNavigationBar(
     )
 
     val items = if (isAdmin) {
-        baseItems + BottomNavItem(
-            name = "Admin",
-            route = "backoffice",
-            icon = Icons.Default.Work
+        baseItems + listOf(
+            BottomNavItem(
+                name = "Admin Productos",
+                route = "backoffice_productos",
+                icon = Icons.Default.Work
+            ),
+            BottomNavItem(
+                name = "Admin Usuarios",
+                route = "backoffice_usuarios",
+                icon = Icons.Default.Person
+            )
         )
     } else baseItems
 

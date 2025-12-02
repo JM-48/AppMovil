@@ -113,21 +113,7 @@ fun LoginScreen(navController: NavController, viewModel: AuthViewModel) {
                 text = "Entrar",
                 onClick = {
                     if (emailError == null) {
-                        if (viewModel.login(email, password)) {
-                            if (viewModel.esAdministrador.value) {
-                                navController.navigate("backoffice") {
-                                    popUpTo(navController.graph.startDestinationId) { inclusive = true }
-                                    launchSingleTop = true
-                                    restoreState = false
-                                }
-                            } else {
-                                navController.navigate("catalogo") {
-                                    popUpTo(navController.graph.startDestinationId) { inclusive = true }
-                                    launchSingleTop = true
-                                    restoreState = false
-                                }
-                            }
-                        }
+                        viewModel.login(email, password)
                     }
                 },
                 enabled = emailError == null && email.isNotBlank() && password.isNotBlank(),
@@ -142,6 +128,24 @@ fun LoginScreen(navController: NavController, viewModel: AuthViewModel) {
                 }
             }) {
                 Text("¿No tienes cuenta? Regístrate", color = Color.White)
+            }
+        }
+    }
+    LaunchedEffect(viewModel.usuarioActual.value, viewModel.esAdministrador.value) {
+        val user = viewModel.usuarioActual.value
+        if (user != null) {
+            if (viewModel.esAdministrador.value) {
+                navController.navigate("backoffice_productos") {
+                    popUpTo(navController.graph.startDestinationId) { inclusive = true }
+                    launchSingleTop = true
+                    restoreState = false
+                }
+            } else {
+                navController.navigate("catalogo") {
+                    popUpTo(navController.graph.startDestinationId) { inclusive = true }
+                    launchSingleTop = true
+                    restoreState = false
+                }
             }
         }
     }
