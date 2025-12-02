@@ -29,6 +29,7 @@ import com.example.catalogoproductos.ui.MiTopBar
 import com.example.catalogoproductos.ui.theme.CatalogoProductosTheme
 import com.example.catalogoproductos.viewmodel.*
 import com.example.catalogoproductos.components.BottomNavigationBar
+import com.example.catalogoproductos.viewmodel.NoticiasViewModel
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -67,7 +68,7 @@ class MainActivity : ComponentActivity() {
                         topBar = {
                             val navBackStackEntry by navController.currentBackStackEntryAsState()
                             val currentRoute = navBackStackEntry?.destination?.route
-                            val showBack = currentRoute !in listOf("catalogo", "login")
+                            val showBack = currentRoute !in listOf("catalogo", "login", "noticias")
                             MiTopBar(
                                 title = title,
                                 navController = navController,
@@ -102,6 +103,13 @@ class MainActivity : ComponentActivity() {
                             composable("catalogo") {
                                 title = "Catálogo de Productos"
                                 CatalogoScreen(navController, catalogoViewModel, authViewModel)
+                            }
+                            composable("noticias") {
+                                title = "Noticias"
+                                val noticiasViewModel = viewModel<NoticiasViewModel>(
+                                    factory = NoticiasViewModel.Factory { applicationContext.getString(R.string.gnews_api_key) }
+                                )
+                                com.example.catalogoproductos.screen.NoticiasScreen(navController, noticiasViewModel)
                             }
                             composable("detalle/{productoId}") { backStack ->
                                 title = "Detalle del Producto"

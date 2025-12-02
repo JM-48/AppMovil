@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">DriftX</string>
+    <string name="gnews_api_key">ef6f3eb73f074c82fbe5a34916085e72</string>
 </resources>

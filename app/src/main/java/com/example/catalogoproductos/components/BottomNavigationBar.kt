@@ -5,6 +5,7 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.Work
+import androidx.compose.material.icons.filled.List
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -36,6 +37,11 @@ fun BottomNavigationBar(
             name = "Catálogo",
             route = "catalogo",
             icon = Icons.Default.Home
+        ),
+        BottomNavItem(
+            name = "Noticias",
+            route = "noticias",
+            icon = Icons.Default.List
         ),
         BottomNavItem(
             name = "Carrito",
