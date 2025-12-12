@@ -199,6 +199,7 @@ class RegisterViewModel(
             telefono = telefono,
             direccion = direccion,
             ciudad = comuna,
+            region = region,
             codigoPostal = codigoPostal,
             role = "USER"
         )

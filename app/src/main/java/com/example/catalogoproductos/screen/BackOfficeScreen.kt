@@ -310,16 +310,48 @@ fun FormularioTab(viewModel: BackOfficeViewModel, title: String, isCreate: Boole
             )
         }
         
+        var formatoDescripcion by remember { mutableStateOf("Markdown") }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            AssistChip(onClick = { formatoDescripcion = "Markdown" }, label = { Text("Markdown") }, leadingIcon = { if (formatoDescripcion == "Markdown") Icon(Icons.Default.Check, null) })
+            AssistChip(onClick = { formatoDescripcion = "HTML" }, label = { Text("HTML") }, leadingIcon = { if (formatoDescripcion == "HTML") Icon(Icons.Default.Check, null) })
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            IconButton(onClick = { viewModel.updateDescripcion("**" + viewModel.descripcion + "**") }) { Icon(Icons.Default.FormatBold, contentDescription = "Negrita") }
+            IconButton(onClick = { viewModel.updateDescripcion("_" + viewModel.descripcion + "_") }) { Icon(Icons.Default.FormatItalic, contentDescription = "Cursiva") }
+            IconButton(onClick = { viewModel.updateDescripcion("# " + viewModel.descripcion) }) { Icon(Icons.Default.Title, contentDescription = "Título") }
+            IconButton(onClick = { viewModel.updateDescripcion(viewModel.descripcion + "\n- ") }) { Icon(Icons.Default.List, contentDescription = "Lista") }
+        }
+        Spacer(modifier = Modifier.height(8.dp))
         OutlinedTextField(
             value = viewModel.descripcion,
             onValueChange = { viewModel.updateDescripcion(it) },
-            label = { Text("Descripción") },
-            modifier = Modifier.fillMaxWidth(),
+            label = { Text("Descripción (${formatoDescripcion})") },
+            modifier = Modifier.fillMaxWidth().heightIn(min = 120.dp),
             keyboardOptions = KeyboardOptions(
                 keyboardType = KeyboardType.Text,
                 imeAction = ImeAction.Next
-            )
+            ),
+            maxLines = 6
         )
+        Spacer(modifier = Modifier.height(8.dp))
+        fun markdownToHtml(md: String): String {
+            var s = md
+            s = s.replace(Regex("^# (.*)$", RegexOption.MULTILINE), "<h1>$1</h1>")
+            s = s.replace(Regex("^## (.*)$", RegexOption.MULTILINE), "<h2>$1</h2>")
+            s = s.replace(Regex("\n- (.*)", RegexOption.MULTILINE), "<br/>• $1")
+            s = s.replace(Regex("""\*\*(.*?)\*\*""", RegexOption.DOT_MATCHES_ALL), "<b>$1</b>")
+            s = s.replace(Regex("_(.*?)_", RegexOption.DOT_MATCHES_ALL), "<i>$1</i>")
+            return s
+        }
+        val htmlPreview = if (formatoDescripcion == "HTML") viewModel.descripcion else markdownToHtml(viewModel.descripcion)
+        Card(modifier = Modifier.fillMaxWidth()) {
+            androidx.compose.ui.viewinterop.AndroidView(factory = { ctx -> android.widget.TextView(ctx) }, update = { tv ->
+                val sp = androidx.core.text.HtmlCompat.fromHtml(htmlPreview, androidx.core.text.HtmlCompat.FROM_HTML_MODE_LEGACY)
+                tv.text = sp
+                tv.setTextColor(android.graphics.Color.WHITE)
+            }, modifier = Modifier.padding(12.dp))
+        }
         Spacer(modifier = Modifier.height(8.dp))
         val productosState by viewModel.productos.collectAsState()
         val categorias = productosState.mapNotNull { it.tipo }.filter { it.isNotBlank() }.distinct().sorted()

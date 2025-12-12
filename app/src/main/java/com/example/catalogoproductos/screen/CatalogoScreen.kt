@@ -214,10 +214,21 @@ fun CatalogoScreen(
                                 ) {
                                     Column {
                                         Spacer(modifier = Modifier.height(4.dp))
-                                        Text(
-                                            text = descripcion,
-                                            style = MaterialTheme.typography.bodyMedium
-                                        )
+                                        fun markdownToHtml(md: String): String {
+                                            var s = md
+                                            s = s.replace(Regex("^# (.*)$", RegexOption.MULTILINE), "<h1>$1</h1>")
+                                            s = s.replace(Regex("^## (.*)$", RegexOption.MULTILINE), "<h2>$1</h2>")
+                                            s = s.replace(Regex("\n- (.*)", RegexOption.MULTILINE), "<br/>• $1")
+                                            s = s.replace(Regex("""\*\*(.*?)\*\*""", RegexOption.DOT_MATCHES_ALL), "<b>$1</b>")
+                                            s = s.replace(Regex("_(.*?)_", RegexOption.DOT_MATCHES_ALL), "<i>$1</i>")
+                                            return s
+                                        }
+                                        val html = if (descripcion.contains("<")) descripcion else markdownToHtml(descripcion)
+                                        androidx.compose.ui.viewinterop.AndroidView(factory = { ctx -> android.widget.TextView(ctx) }, update = { tv ->
+                                            val sp = androidx.core.text.HtmlCompat.fromHtml(html, androidx.core.text.HtmlCompat.FROM_HTML_MODE_LEGACY)
+                                            tv.text = sp
+                                            tv.setTextColor(android.graphics.Color.WHITE)
+                                        })
                                     }
                                 }
 

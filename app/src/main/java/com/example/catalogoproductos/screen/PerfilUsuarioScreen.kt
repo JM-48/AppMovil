@@ -300,6 +300,7 @@ fun PerfilUsuarioScreen(
                 LaunchedEffect(regionesYComunas, perfilViewModel.ciudad) {
                     val found = regionesYComunas.firstOrNull { it.comunas.contains(perfilViewModel.ciudad) }
                     selectedRegion = found?.region ?: selectedRegion
+                    found?.region?.let { perfilViewModel.updateRegion(it) }
                 }
 
                 val regiones = remember(regionesYComunas) {
@@ -343,6 +344,7 @@ fun PerfilUsuarioScreen(
                                 onClick = {
                                     selectedRegion = region
                                     // Resetear la comuna cuando cambia la región
+                                    perfilViewModel.updateRegion(region)
                                     perfilViewModel.updateCiudad("")
                                     expandedRegion = false
                                 }

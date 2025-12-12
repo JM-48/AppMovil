@@ -19,6 +19,7 @@ class AuthRepository {
         val telefono: String?,
         val direccion: String?,
         val ciudad: String?,
+        val region: String?,
         val codigoPostal: String?,
         val role: String?
     )

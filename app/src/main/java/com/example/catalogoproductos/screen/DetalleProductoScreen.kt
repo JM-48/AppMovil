@@ -35,6 +35,7 @@ fun DetalleProductoScreen(
     val producto = catalogoViewModel.buscarProductoPorId(productoId)
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    val itemsCarrito by carritoViewModel.itemsCarrito.collectAsState()
 
     // Usar email string en vez de objeto usuario
     val currentUserEmail = authViewModel.usuarioActual.value
@@ -80,36 +81,57 @@ fun DetalleProductoScreen(
             fontWeight = FontWeight.Bold,
             color = Color.White
         )
-        Text(
-            text = producto.descripcion ?: "",
-            style = MaterialTheme.typography.bodyMedium,
-            color = Color.White
-        )
+        val descripcion = producto.descripcion ?: ""
+        if (descripcion.isNotBlank()) {
+            fun markdownToHtml(md: String): String {
+                var s = md
+                s = s.replace(Regex("^# (.*)$", RegexOption.MULTILINE), "<h1>$1</h1>")
+                s = s.replace(Regex("^## (.*)$", RegexOption.MULTILINE), "<h2>$1</h2>")
+                s = s.replace(Regex("\n- (.*)", RegexOption.MULTILINE), "<br/>• $1")
+                s = s.replace(Regex("\*\*(.*?)\*\*", RegexOption.DOT_MATCHES_ALL), "<b>$1</b>")
+                s = s.replace(Regex("_(.*?)_", RegexOption.DOT_MATCHES_ALL), "<i>$1</i>")
+                return s
+            }
+            val html = if (descripcion.contains("<")) descripcion else markdownToHtml(descripcion)
+            androidx.compose.ui.viewinterop.AndroidView(factory = { ctx -> android.widget.TextView(ctx) }, update = { tv ->
+                val sp = androidx.core.text.HtmlCompat.fromHtml(html, androidx.core.text.HtmlCompat.FROM_HTML_MODE_LEGACY)
+                tv.text = sp
+                tv.setTextColor(android.graphics.Color.WHITE)
+            })
+        }
         Text(
             text = "Precio: ${com.example.catalogoproductos.util.CurrencyUtils.formatCLP(producto.precio)}",
             style = MaterialTheme.typography.titleMedium,
             color = Color.White
         )
 
+        val qtyEnCarrito = itemsCarrito.firstOrNull { it.productoId == producto.id }?.cantidad ?: 0
         GradientButton(
             text = "Agregar al Carrito",
             onClick = {
             currentUserEmail?.let { email ->
-                val item = ItemCarrito(
-                    productoId = producto.id,
-                    nombre = producto.nombre,
-                    precio = producto.precio,
-                    imagen = producto.imagen ?: "",
-                    cantidad = 1,
-                    emailUsuario = email
-                )
-                carritoViewModel.agregarAlCarrito(item)
-                scope.launch { snackbarHostState.showSnackbar("Producto agregado al carrito") }
+                if (producto.stock <= 0) {
+                    scope.launch { snackbarHostState.showSnackbar("Sin stock disponible") }
+                } else if (qtyEnCarrito + 1 > producto.stock) {
+                    scope.launch { snackbarHostState.showSnackbar("No puedes comprar más que el stock disponible") }
+                } else {
+                    val item = ItemCarrito(
+                        productoId = producto.id,
+                        nombre = producto.nombre,
+                        precio = producto.precio,
+                        imagen = producto.imagen ?: "",
+                        cantidad = 1,
+                        emailUsuario = email
+                    )
+                    carritoViewModel.agregarAlCarrito(item)
+                    scope.launch { snackbarHostState.showSnackbar("Producto agregado al carrito") }
+                }
             } ?: run {
                 scope.launch { snackbarHostState.showSnackbar("Debes iniciar sesión para agregar al carrito") }
             }
             },
-            modifier = Modifier.fillMaxWidth().height(50.dp)
+            modifier = Modifier.fillMaxWidth().height(50.dp),
+            enabled = producto.stock > 0
         )
 
         GradientButton(

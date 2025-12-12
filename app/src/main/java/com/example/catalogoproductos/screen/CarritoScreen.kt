@@ -41,6 +41,16 @@ fun CarritoScreen(
     
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    var stockMap by remember { mutableStateOf<Map<Int, Int>>(emptyMap()) }
+    LaunchedEffect(Unit) {
+        try {
+            val repo = com.example.catalogoproductos.repository.ProductoRepository()
+            val productos = repo.obtenerProductosDesdeApi()
+            stockMap = productos.associate { it.id to it.stock }
+        } catch (_: Exception) {
+            stockMap = emptyMap()
+        }
+    }
     
     // Estados para animaciones y feedback
     var isLoading by remember { mutableStateOf(false) }
@@ -117,7 +127,15 @@ fun CarritoScreen(
                                 item = item,
                                 onIncrement = { 
                                     scope.launch {
-                                        carritoViewModel.actualizarCantidad(item.id, item.cantidad + 1)
+                                        val max = stockMap[item.productoId] ?: Int.MAX_VALUE
+                                        if (item.cantidad + 1 > max) {
+                                            snackbarHostState.showSnackbar(
+                                                message = "No puedes comprar más que el stock disponible",
+                                                duration = SnackbarDuration.Short
+                                            )
+                                        } else {
+                                            carritoViewModel.actualizarCantidad(item.id, item.cantidad + 1)
+                                        }
                                     }
                                 },
                                 onDecrement = { 
@@ -180,15 +198,29 @@ fun CarritoScreen(
                                 onClick = {
                                     scope.launch {
                                         isLoading = true
-                                        delay(800) // Simular carga
+                                        delay(800)
+                                        val exceso = itemsCarrito.any { it.cantidad > (stockMap[it.productoId] ?: Int.MAX_VALUE) }
+                                        val sinStock = itemsCarrito.any { (stockMap[it.productoId] ?: 0) == 0 }
                                         isLoading = false
-                                        navController.navigate("direccion")
+                                        if (exceso) {
+                                            snackbarHostState.showSnackbar(
+                                                message = "Tu carrito excede el stock disponible",
+                                                duration = SnackbarDuration.Short
+                                            )
+                                        } else if (sinStock) {
+                                            snackbarHostState.showSnackbar(
+                                                message = "Hay productos sin stock en tu carrito",
+                                                duration = SnackbarDuration.Short
+                                            )
+                                        } else {
+                                            navController.navigate("direccion")
+                                        }
                                     }
                                 },
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(50.dp),
-                                enabled = !isLoading && !actionInProgress,
+                                enabled = !isLoading && !actionInProgress && itemsCarrito.all { (stockMap[it.productoId] ?: 0) > 0 },
                                 icon = Icons.Default.Payment
                             )
                         }

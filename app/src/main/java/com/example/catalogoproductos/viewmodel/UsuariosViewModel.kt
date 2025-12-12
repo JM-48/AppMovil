@@ -27,6 +27,7 @@ class UsuariosViewModel : ViewModel() {
     var direccion by mutableStateOf("")
     var ciudad by mutableStateOf("")
     var codigoPostal by mutableStateOf("")
+    var region by mutableStateOf("")
     var role by mutableStateOf("USER")
 
     var emailError by mutableStateOf<String?>(null)
@@ -90,6 +91,7 @@ class UsuariosViewModel : ViewModel() {
     fun updateTelefono(v: String) { telefono = v }
     fun updateDireccion(v: String) { direccion = v }
     fun updateCiudad(v: String) { ciudad = v }
+    fun updateRegion(v: String) { region = v }
     fun updateCodigoPostal(v: String) { codigoPostal = v }
     fun updateRole(v: String) { role = v; validateRole() }
 
@@ -151,6 +153,7 @@ class UsuariosViewModel : ViewModel() {
                     "telefono" to telefono,
                     "direccion" to direccion,
                     "ciudad" to ciudad,
+                    "region" to region,
                     "codigoPostal" to codigoPostal,
                     "role" to role
                 )

@@ -317,7 +317,7 @@ class BackOfficeViewModel : ViewModel() {
         return when {
             stock.isBlank() -> { stockError = "El stock es obligatorio"; false }
             s == null -> { stockError = "El stock debe ser un número entero"; false }
-            s <= 0 -> { stockError = "El stock debe ser mayor que cero"; false }
+            s < 0 -> { stockError = "El stock no puede ser negativo"; false }
             else -> { stockError = null; true }
         }
     }

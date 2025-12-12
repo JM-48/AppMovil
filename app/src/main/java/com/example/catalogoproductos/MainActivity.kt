@@ -1,6 +1,7 @@
 package com.example.catalogoproductos
 
 import android.os.Bundle
+import android.content.Context
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.material3.MaterialTheme
@@ -56,6 +57,34 @@ class MainActivity : ComponentActivity() {
                     val perfilUsuarioRepository = remember { PerfilUsuarioRepository(db.perfilUsuarioDao()) }
                     val direccionRepository = remember { DireccionRepository(db.direccionDao()) }
                     val authViewModel = viewModel<AuthViewModel>()
+                    val appCtx = applicationContext
+                    androidx.compose.runtime.LaunchedEffect(Unit) {
+                        val prefs = appCtx.getSharedPreferences("auth_prefs", Context.MODE_PRIVATE)
+                        val tk = prefs.getString("token", null)
+                        val email = prefs.getString("email", null)
+                        val role = prefs.getString("role", null)
+                        if (!tk.isNullOrBlank() && !email.isNullOrBlank()) {
+                            authViewModel.token.value = tk
+                            authViewModel.usuarioActual.value = email
+                            authViewModel.role.value = role
+                            authViewModel.esAdministrador.value = (role?.equals("ADMIN", true) == true)
+                        }
+                    }
+                    androidx.compose.runtime.LaunchedEffect(authViewModel.token.value, authViewModel.usuarioActual.value, authViewModel.role.value) {
+                        val prefs = appCtx.getSharedPreferences("auth_prefs", Context.MODE_PRIVATE)
+                        val edit = prefs.edit()
+                        val tk = authViewModel.token.value
+                        val email = authViewModel.usuarioActual.value
+                        val role = authViewModel.role.value
+                        if (tk.isNullOrBlank() || email.isNullOrBlank()) {
+                            edit.clear().apply()
+                        } else {
+                            edit.putString("token", tk)
+                                .putString("email", email)
+                                .putString("role", role)
+                                .apply()
+                        }
+                    }
                     val catalogoViewModel = viewModel<CatalogoViewModel>()
                     val direccionViewModel = viewModel<DireccionViewModel>(
                         factory = com.example.catalogoproductos.viewmodel.Factory(direccionRepository)

@@ -33,6 +33,7 @@ class PerfilUsuarioViewModel(
         private set
     var codigoPostal by mutableStateOf("")
         private set
+    var region by mutableStateOf("")
 
     // Estados para los errores de validación
     var nombreError by mutableStateOf<String?>(null)
@@ -105,6 +106,7 @@ class PerfilUsuarioViewModel(
         codigoPostal = value
         validarCodigoPostal()
     }
+    fun updateRegion(value: String) { region = value }
 
     private fun validarNombre() {
         nombreError = when {
@@ -216,6 +218,7 @@ class PerfilUsuarioViewModel(
                     "telefono" to telefono,
                     "direccion" to direccion,
                     "ciudad" to ciudad,
+                    "region" to region,
                     "codigoPostal" to codigoPostal
                 )
                 val authRepo = AuthRepository()
