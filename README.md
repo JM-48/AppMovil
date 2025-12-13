@@ -28,9 +28,9 @@ Aplicación móvil Android (Jetpack Compose + Kotlin) para explorar un catálogo
 - Email: `admin@catalogo.com`
 - Password: `admin123`
 
-## Ejecución y Pruebas
+## Ejecución
 - Ejecutar en Android Studio (Run). Requiere JDK 11+.
-- Pruebas unitarias: `gradlew test` (todas pasan).
+- Ejecutar en celular por medio de apk
 
 ## Endpoints
 - Base: `https://apitest-1-95ny.onrender.com/`
@@ -123,7 +123,7 @@ Aplicación móvil Android (Jetpack Compose + Kotlin) para explorar un catálogo
 
 ## Pantallas
 - Login/Registro:
-  - Validaciones en vivo; contraseña oculta; soporte “ñ”; Enter confirma.
+  - Validaciones en vivo; contraseña oculta”; Enter confirma.
   - Persistencia de token y rol en DataStore. Manejo de errores: `401` → “Token requerido”, `403` → “Acceso denegado”.
 
 - Catálogo:
