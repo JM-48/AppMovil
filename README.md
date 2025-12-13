@@ -1,6 +1,6 @@
 ## Driftx
 
-##Jean Morales
+## Jean Morales
 
 ## Descripción Breve
 Aplicación móvil Android (Jetpack Compose + Kotlin) para explorar un catálogo de productos, agregar items al carrito y realizar una compra simulada. Mantiene arquitectura MVVM, persistencia con Room/DataStore y consumo de API con Retrofit/OkHttp y JWT para rutas protegidas. Incluye control de acceso por roles para pantallas administrativas.
