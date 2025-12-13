@@ -1,9 +1,8 @@
 # Catálogo de Productos
 
-## Trabajador
-- Único trabajador: Jean Morales
+## Jean Morales
 
-## Descripción Breve
+## Descripción
 Aplicación móvil Android (Jetpack Compose + Kotlin) para explorar un catálogo de productos, agregar items al carrito y realizar una compra simulada. Mantiene arquitectura MVVM, persistencia con Room/DataStore y consumo de API con Retrofit/OkHttp y JWT para rutas protegidas. Incluye control de acceso por roles para pantallas administrativas.
 
 ## Cómo Funciona
@@ -23,4 +22,4 @@ Aplicación móvil Android (Jetpack Compose + Kotlin) para explorar un catálogo
 
 ## Ejecución y Pruebas
 - Ejecutar en Android Studio (Run). Requiere JDK 11+.
-- Pruebas unitarias: `gradlew test` (todas pasan). 
+- Pruebas unitarias: `gradlew test`. 
