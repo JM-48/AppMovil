@@ -28,14 +28,13 @@ class UsuarioRepository {
             try {
                 connection.requestMethod = "GET"
                 connection.setRequestProperty("Authorization", "Bearer $token")
-                connection.connectTimeout = 15000
-                connection.readTimeout = 15000
+                connection.connectTimeout = 60000
+                connection.readTimeout = 60000
                 val code = connection.responseCode
                 val stream = if (code in 200..299) connection.inputStream else connection.errorStream
                 val json = stream.bufferedReader().use { it.readText() }
-                if (code !in 200..299) throw RuntimeException("HTTP $code: $json")
+                if (code !in 200..299) return@withContext emptyList()
                 try {
-                    // La respuesta de /users es un objeto; intentar extraer listas comunes
                     fun mapToDto(m: Map<String, Any?>): UsuarioDto {
                         @Suppress("UNCHECKED_CAST")
                         val p = (m["profile"] as? Map<*, *>) as? Map<String, Any?>
@@ -51,7 +50,6 @@ class UsuarioRepository {
                             role = m["role"] as? String
                         )
                     }
-
                     val gson = Gson()
                     val trimmed = json.trim()
                     if (trimmed.startsWith("[")) {
@@ -63,7 +61,7 @@ class UsuarioRepository {
                         val keys = listOf("content", "items", "data", "results", "list", "usuarios", "users")
                         val arrayAny = keys.firstNotNullOfOrNull { k ->
                             val v = obj[k]
-                            @Suppress("UNCHECKED_CAST")
+                            @Suppress("UNCHECKEDCAST")
                             (v as? List<Map<String, Any?>>)
                         }
                         when {
@@ -79,6 +77,10 @@ class UsuarioRepository {
                 } catch (_: Exception) {
                     emptyList()
                 }
+            } catch (_: java.net.SocketTimeoutException) {
+                emptyList()
+            } catch (_: java.io.IOException) {
+                emptyList()
             } finally {
                 connection.disconnect()
             }
@@ -93,8 +95,8 @@ class UsuarioRepository {
             connection.requestMethod = "POST"
             connection.setRequestProperty("Content-Type", "application/json")
             connection.setRequestProperty("Authorization", "Bearer $token")
-            connection.connectTimeout = 15000
-            connection.readTimeout = 15000
+            connection.connectTimeout = 60000
+            connection.readTimeout = 60000
             val jsonBody = Gson().toJson(body)
             BufferedWriter(OutputStreamWriter(connection.outputStream)).use { it.write(jsonBody) }
             val code = connection.responseCode
@@ -124,8 +126,8 @@ class UsuarioRepository {
             connection.requestMethod = "PUT"
             connection.setRequestProperty("Content-Type", "application/json")
             connection.setRequestProperty("Authorization", "Bearer $token")
-            connection.connectTimeout = 15000
-            connection.readTimeout = 15000
+            connection.connectTimeout = 60000
+            connection.readTimeout = 60000
             val jsonBody = Gson().toJson(body)
             BufferedWriter(OutputStreamWriter(connection.outputStream)).use { it.write(jsonBody) }
             val code = connection.responseCode

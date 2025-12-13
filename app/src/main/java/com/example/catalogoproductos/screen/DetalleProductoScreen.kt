@@ -40,6 +40,7 @@ fun DetalleProductoScreen(
     // Usar email string en vez de objeto usuario
     val currentUserEmail = authViewModel.usuarioActual.value
 
+
     if (producto == null) {
         Column(
             modifier = Modifier
@@ -88,7 +89,7 @@ fun DetalleProductoScreen(
                 s = s.replace(Regex("^# (.*)$", RegexOption.MULTILINE), "<h1>$1</h1>")
                 s = s.replace(Regex("^## (.*)$", RegexOption.MULTILINE), "<h2>$1</h2>")
                 s = s.replace(Regex("\n- (.*)", RegexOption.MULTILINE), "<br/>• $1")
-                s = s.replace(Regex("\*\*(.*?)\*\*", RegexOption.DOT_MATCHES_ALL), "<b>$1</b>")
+                s = s.replace(Regex("""\*\*(.*?)\*\*""", RegexOption.DOT_MATCHES_ALL), "<b>$1</b>")
                 s = s.replace(Regex("_(.*?)_", RegexOption.DOT_MATCHES_ALL), "<i>$1</i>")
                 return s
             }
@@ -104,6 +105,8 @@ fun DetalleProductoScreen(
             style = MaterialTheme.typography.titleMedium,
             color = Color.White
         )
+        
+
 
         val qtyEnCarrito = itemsCarrito.firstOrNull { it.productoId == producto.id }?.cantidad ?: 0
         GradientButton(

@@ -1,12 +1,9 @@
 package com.example.catalogoproductos.repository
 
-import com.google.gson.Gson
+import com.example.catalogoproductos.network.AuthService
+import com.example.catalogoproductos.network.RetrofitClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.io.BufferedWriter
-import java.io.OutputStreamWriter
-import java.net.HttpURLConnection
-import java.net.URL
 
 class AuthRepository {
     data class LoginRequest(val email: String, val password: String)
@@ -23,101 +20,95 @@ class AuthRepository {
         val codigoPostal: String?,
         val role: String?
     )
-    data class MeResponse(val email: String?, val role: String?)
+    data class ProfileApi(
+        val nombre: String?,
+        val apellido: String?,
+        val telefono: String?,
+        val direccion: String?,
+        val region: String?,
+        val ciudad: String?,
+        val codigoPostal: String?
+    )
+    data class MeResponse(val email: String?, val role: String?, val profile: ProfileApi?)
 
-    suspend fun login(email: String, password: String, urlBase: String = "https://apitest-1-95ny.onrender.com/auth/login"): LoginResponse {
+    private val service: AuthService = RetrofitClient.backend.create(AuthService::class.java)
+
+    suspend fun login(email: String, password: String): LoginResponse {
         return withContext(Dispatchers.IO) {
-            val url = URL(urlBase)
-            val connection = (url.openConnection() as HttpURLConnection)
-            connection.doOutput = true
-            connection.requestMethod = "POST"
-            connection.setRequestProperty("Content-Type", "application/json")
-            connection.connectTimeout = 15000
-            connection.readTimeout = 15000
-
-            val body = LoginRequest(email, password)
-            val jsonBody = Gson().toJson(body)
-            BufferedWriter(OutputStreamWriter(connection.outputStream)).use { it.write(jsonBody) }
-
-            val code = connection.responseCode
-            val stream = if (code in 200..299) connection.inputStream else connection.errorStream
-            val json = stream.bufferedReader().use { it.readText() }
-            if (code !in 200..299) throw RuntimeException("HTTP $code: $json")
             try {
-                Gson().fromJson(json, LoginResponse::class.java)
-            } catch (_: Exception) {
-                // fallback por si la respuesta no coincide exactamente
-                val map = Gson().fromJson(json, Map::class.java) as Map<*, *>
-                LoginResponse(map["token"] as String?, map["role"] as String?, map["email"] as String?)
+                val res = service.login(AuthService.LoginRequest(email, password))
+                AuthRepository.LoginResponse(res.token, res.role, res.email)
+            } catch (e: java.net.SocketTimeoutException) {
+                throw RuntimeException("Timeout de conexión")
+            } catch (e: java.io.IOException) {
+                throw RuntimeException("Error de red: ${e.message}")
+            } catch (e: Exception) {
+                throw RuntimeException(e.message ?: "Error desconocido")
             }
         }
     }
 
-    suspend fun me(token: String, urlBase: String = "https://apitest-1-95ny.onrender.com/users/me"): MeResponse {
+    suspend fun me(token: String): MeResponse {
         return withContext(Dispatchers.IO) {
-            val url = URL(urlBase)
-            val connection = (url.openConnection() as HttpURLConnection)
-            connection.requestMethod = "GET"
-            connection.setRequestProperty("Authorization", "Bearer $token")
-            connection.connectTimeout = 15000
-            connection.readTimeout = 15000
-            val code = connection.responseCode
-            val stream = if (code in 200..299) connection.inputStream else connection.errorStream
-            val json = stream.bufferedReader().use { it.readText() }
-            if (code !in 200..299) throw RuntimeException("HTTP $code: $json")
             try {
-                Gson().fromJson(json, MeResponse::class.java)
-            } catch (_: Exception) {
-                val map = Gson().fromJson(json, Map::class.java) as Map<*, *>
-                MeResponse(map["email"] as String?, map["role"] as String?)
+                val res = service.me("Bearer $token")
+                val p = res.profile
+                val profile = if (p != null) ProfileApi(p.nombre, p.apellido, p.telefono, p.direccion, p.region, p.ciudad, p.codigoPostal) else null
+                AuthRepository.MeResponse(res.email, res.role, profile)
+            } catch (e: java.net.SocketTimeoutException) {
+                throw RuntimeException("Timeout de conexión")
+            } catch (e: java.io.IOException) {
+                throw RuntimeException("Error de red: ${e.message}")
+            } catch (e: Exception) {
+                throw RuntimeException(e.message ?: "Error desconocido")
             }
         }
     }
 
-    suspend fun register(req: RegisterRequest, urlBase: String = "https://apitest-1-95ny.onrender.com/auth/register"): Boolean {
+    suspend fun register(req: RegisterRequest): Boolean {
         return withContext(Dispatchers.IO) {
-            val url = URL(urlBase)
-            val connection = (url.openConnection() as HttpURLConnection)
-            connection.doOutput = true
-            connection.requestMethod = "POST"
-            connection.setRequestProperty("Content-Type", "application/json")
-            connection.connectTimeout = 15000
-            connection.readTimeout = 15000
-
-            val jsonBody = Gson().toJson(req)
-            BufferedWriter(OutputStreamWriter(connection.outputStream)).use { it.write(jsonBody) }
-
-            val code = connection.responseCode
-            val stream = if (code in 200..299) connection.inputStream else connection.errorStream
-            val json = stream.bufferedReader().use { it.readText() }
-            if (code !in 200..299) throw RuntimeException("HTTP $code: $json")
-            true
+            try {
+                val body = mapOf(
+                    "email" to req.email,
+                    "password" to req.password,
+                    "nombre" to req.nombre,
+                    "apellido" to req.apellido,
+                    "telefono" to req.telefono,
+                    "direccion" to req.direccion,
+                    "ciudad" to req.ciudad,
+                    "region" to req.region,
+                    "codigoPostal" to req.codigoPostal,
+                    "role" to req.role
+                )
+                val response = service.register(body)
+                if (!response.isSuccessful) throw RuntimeException("HTTP ${response.code()}: ${response.errorBody()?.string()}")
+                true
+            } catch (e: java.net.SocketTimeoutException) {
+                throw RuntimeException("Timeout de conexión")
+            } catch (e: java.io.IOException) {
+                throw RuntimeException("Error de red: ${e.message}")
+            } catch (e: Exception) {
+                throw RuntimeException(e.message ?: "Error desconocido")
+            }
         }
     }
 
     suspend fun actualizarMiPerfil(
         token: String,
-        body: Map<String, Any?>,
-        urlBase: String = "https://apitest-1-95ny.onrender.com/users/me"
+        body: Map<String, Any?>
     ): Boolean {
         return withContext(Dispatchers.IO) {
-            val url = URL(urlBase)
-            val connection = (url.openConnection() as HttpURLConnection)
-            connection.doOutput = true
-            connection.requestMethod = "PATCH"
-            connection.setRequestProperty("Content-Type", "application/json")
-            connection.setRequestProperty("Authorization", "Bearer $token")
-            connection.connectTimeout = 15000
-            connection.readTimeout = 15000
-
-            val jsonBody = Gson().toJson(body)
-            BufferedWriter(OutputStreamWriter(connection.outputStream)).use { it.write(jsonBody) }
-
-            val code = connection.responseCode
-            val stream = if (code in 200..299) connection.inputStream else connection.errorStream
-            val json = stream.bufferedReader().use { it.readText() }
-            if (code !in 200..299) throw RuntimeException("HTTP $code: $json")
-            true
+            try {
+                val response = service.updateMe("Bearer $token", body)
+                if (!response.isSuccessful) throw RuntimeException("HTTP ${response.code()}: ${response.errorBody()?.string()}")
+                true
+            } catch (e: java.net.SocketTimeoutException) {
+                throw RuntimeException("Timeout de conexión")
+            } catch (e: java.io.IOException) {
+                throw RuntimeException("Error de red: ${e.message}")
+            } catch (e: Exception) {
+                throw RuntimeException(e.message ?: "Error desconocido")
+            }
         }
     }
 }

@@ -30,7 +30,8 @@ data class BottomNavItem(
 fun BottomNavigationBar(
     navController: NavController,
     isUserLoggedIn: Boolean,
-    isAdmin: Boolean
+    allowAdminProductos: Boolean,
+    allowAdminUsuarios: Boolean
 ) {
     val baseItems = listOf(
         BottomNavItem(
@@ -56,20 +57,23 @@ fun BottomNavigationBar(
         )
     )
 
-    val items = if (isAdmin) {
-        baseItems + listOf(
+    val adminItems = buildList {
+        if (allowAdminProductos) add(
             BottomNavItem(
                 name = "Admin Productos",
                 route = "backoffice_productos",
                 icon = Icons.Default.Work
-            ),
+            )
+        )
+        if (allowAdminUsuarios) add(
             BottomNavItem(
                 name = "Admin Usuarios",
                 route = "backoffice_usuarios",
                 icon = Icons.Default.Person
             )
         )
-    } else baseItems
+    }
+    val items = baseItems + adminItems
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route

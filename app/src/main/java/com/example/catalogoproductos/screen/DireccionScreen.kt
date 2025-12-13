@@ -25,6 +25,9 @@ import androidx.compose.ui.platform.LocalContext
 import com.example.catalogoproductos.repository.RegionComunaRepository
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.flow.first
+import com.example.catalogoproductos.database.AppDatabase
+import com.example.catalogoproductos.repository.PerfilUsuarioRepository
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -49,6 +52,25 @@ fun DireccionScreen(
     }
     val comunasDisponibles = remember(selectedRegion) {
         regionesYComunas.firstOrNull { it.region == selectedRegion }?.comunas?.filter { it.isNotBlank() } ?: emptyList()
+    }
+
+    LaunchedEffect(currentUserEmail) {
+        val email = currentUserEmail
+        if (email != null) {
+            direccionViewModel.cargarDireccionDefault(email)
+            val db = AppDatabase.getDatabase(context)
+            val perfilRepo = PerfilUsuarioRepository(db.perfilUsuarioDao())
+            val perfil = perfilRepo.getPerfilUsuario(email).first()
+            if (perfil != null && direccionViewModel.calle.isBlank() && direccionViewModel.ciudad.isBlank()) {
+                direccionViewModel.updateCalle(perfil.direccion)
+                direccionViewModel.updateNumero("")
+                direccionViewModel.updateProvincia(perfil.region)
+                direccionViewModel.updateCiudad(perfil.ciudad)
+                direccionViewModel.updateCodigoPostal(perfil.codigoPostal)
+                direccionViewModel.updateTelefono(perfil.telefono)
+                selectedRegion = perfil.region
+            }
+        }
     }
 
     LaunchedEffect(regionesYComunas, direccionViewModel.ciudad, direccionViewModel.provincia) {
@@ -86,11 +108,11 @@ fun DireccionScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Calle
+            // Dirección completa (sin número separado)
             OutlinedTextField(
                 value = direccionViewModel.calle,
                 onValueChange = { direccionViewModel.updateCalle(it) },
-                label = { Text("Calle") },
+                label = { Text("Dirección") },
                 modifier = Modifier.fillMaxWidth(),
                 isError = direccionViewModel.calleError != null,
                 colors = TextFieldDefaults.colors(
@@ -120,39 +142,7 @@ fun DireccionScreen(
                 )
             }
 
-            // Número
-            OutlinedTextField(
-                value = direccionViewModel.numero,
-                onValueChange = { direccionViewModel.updateNumero(it) },
-                label = { Text("Número") },
-                modifier = Modifier.fillMaxWidth(),
-                isError = direccionViewModel.numeroError != null,
-                colors = TextFieldDefaults.colors(
-                    focusedTextColor = Color.White,
-                    unfocusedTextColor = Color.White,
-                    cursorColor = Color.White,
-                    focusedLabelColor = Color.White,
-                    unfocusedLabelColor = Color.White,
-                    focusedIndicatorColor = Color.White,
-                    unfocusedIndicatorColor = Color.White,
-                    focusedPlaceholderColor = Color.White.copy(alpha = 0.7f),
-                    unfocusedPlaceholderColor = Color.White.copy(alpha = 0.7f)
-                ),
-
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Text,
-                    imeAction = ImeAction.Next
-                ),
-                singleLine = true
-            )
-            direccionViewModel.numeroError?.let {
-                Text(
-                    text = it,
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier.align(Alignment.Start)
-                )
-            }
+            
 
             // Región (reemplaza Provincia)
             ExposedDropdownMenuBox(
@@ -340,16 +330,7 @@ fun DireccionScreen(
             }
 
             // Checkbox para dirección predeterminada
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Checkbox(
-                    checked = direccionViewModel.esDefault,
-                    onCheckedChange = { direccionViewModel.updateEsDefault(it) }
-                )
-                Text("Establecer como dirección predeterminada")
-            }
+            Spacer(modifier = Modifier.height(8.dp))
 
             // Mensaje de error general
             if (direccionViewModel.errorMessage.isNotEmpty()) {

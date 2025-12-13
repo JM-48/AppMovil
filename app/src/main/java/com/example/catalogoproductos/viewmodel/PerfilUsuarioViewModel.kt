@@ -64,16 +64,66 @@ class PerfilUsuarioViewModel(
     private fun cargarPerfil() {
         viewModelScope.launch {
             // Collect the Flow<PerfilUsuario?> and update state when data arrives
+            var createdDefault = false
             perfilUsuarioRepository.getPerfilUsuario(email).collect { perfil ->
-                perfil?.let {
-                    nombre = it.nombre
-                    apellido = it.apellido
-                    telefono = it.telefono
-                    direccion = it.direccion
-                    ciudad = it.ciudad
-                    codigoPostal = it.codigoPostal
+                if (perfil != null) {
+                    nombre = perfil.nombre
+                    apellido = perfil.apellido
+                    telefono = perfil.telefono
+                    direccion = perfil.direccion
+                    ciudad = perfil.ciudad
+                    codigoPostal = perfil.codigoPostal
+                } else if (!createdDefault) {
+                    // Si no existe un perfil local, crear uno por defecto para que la UI cargue datos
+                    val nuevo = com.example.catalogoproductos.model.PerfilUsuario(
+                        email = email,
+                        nombre = "",
+                        apellido = "",
+                        telefono = "",
+                        direccion = "",
+                        region = "",
+                        ciudad = "",
+                        codigoPostal = ""
+                    )
+                    try {
+                        perfilUsuarioRepository.guardarPerfil(nuevo)
+                        createdDefault = true
+                    } catch (_: Exception) {
+                        // Silenciar y permitir que la pantalla continúe vacía
+                    }
                 }
             }
+        }
+    }
+
+    fun cargarPerfilRemoto(token: String) {
+        if (token.isBlank()) return
+        viewModelScope.launch {
+            try {
+                val authRepo = AuthRepository()
+                val me = authRepo.me(token)
+                val p = me.profile
+                if (p != null) {
+                    val perfilUsuario = PerfilUsuario(
+                        email = email,
+                        nombre = p.nombre ?: nombre,
+                        apellido = p.apellido ?: apellido,
+                        telefono = p.telefono ?: telefono,
+                        direccion = p.direccion ?: direccion,
+                        region = p.region ?: region,
+                        ciudad = p.ciudad ?: ciudad,
+                        codigoPostal = p.codigoPostal ?: codigoPostal
+                    )
+                    perfilUsuarioRepository.actualizarPerfil(perfilUsuario)
+                    nombre = perfilUsuario.nombre
+                    apellido = perfilUsuario.apellido
+                    telefono = perfilUsuario.telefono
+                    direccion = perfilUsuario.direccion
+                    ciudad = perfilUsuario.ciudad
+                    codigoPostal = perfilUsuario.codigoPostal
+                    region = perfilUsuario.region
+                }
+            } catch (_: Exception) { }
         }
     }
 
@@ -230,6 +280,7 @@ class PerfilUsuarioViewModel(
                     apellido = apellido,
                     telefono = telefono,
                     direccion = direccion,
+                    region = region,
                     ciudad = ciudad,
                     codigoPostal = codigoPostal
                 )

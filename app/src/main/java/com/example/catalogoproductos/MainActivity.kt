@@ -2,6 +2,10 @@ package com.example.catalogoproductos
 
 import android.os.Bundle
 import android.content.Context
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.preferencesDataStore
+import kotlinx.coroutines.flow.first
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.material3.MaterialTheme
@@ -58,31 +62,59 @@ class MainActivity : ComponentActivity() {
                     val direccionRepository = remember { DireccionRepository(db.direccionDao()) }
                     val authViewModel = viewModel<AuthViewModel>()
                     val appCtx = applicationContext
+                    val TOKEN = stringPreferencesKey("token")
+                    val EMAIL = stringPreferencesKey("email")
+                    val ROLE = stringPreferencesKey("role")
                     androidx.compose.runtime.LaunchedEffect(Unit) {
-                        val prefs = appCtx.getSharedPreferences("auth_prefs", Context.MODE_PRIVATE)
-                        val tk = prefs.getString("token", null)
-                        val email = prefs.getString("email", null)
-                        val role = prefs.getString("role", null)
+                        val firstPrefs = appCtx.dataStore.data.first()
+                        val tk = firstPrefs[TOKEN]
+                        val email = firstPrefs[EMAIL]
+                        val role = firstPrefs[ROLE]
                         if (!tk.isNullOrBlank() && !email.isNullOrBlank()) {
                             authViewModel.token.value = tk
                             authViewModel.usuarioActual.value = email
-                            authViewModel.role.value = role
-                            authViewModel.esAdministrador.value = (role?.equals("ADMIN", true) == true)
+                            authViewModel.role.value = role?.uppercase()?.let {
+                                when (it) {
+                                    "ADMIN", "USER_AD", "PROD_AD", "CLIENT" -> it
+                                    else -> "CLIENT"
+                                }
+                            }
+                            authViewModel.esAdministrador.value = (authViewModel.role.value == "ADMIN")
+                            try {
+                                val me = com.example.catalogoproductos.repository.AuthRepository().me(tk)
+                                val perfil = me.profile
+                                if (perfil != null) {
+                                    val local = com.example.catalogoproductos.model.PerfilUsuario(
+                                        email = email,
+                                        nombre = perfil.nombre ?: "",
+                                        apellido = perfil.apellido ?: "",
+                                        telefono = perfil.telefono ?: "",
+                                        direccion = perfil.direccion ?: "",
+                                        region = perfil.region ?: "",
+                                        ciudad = perfil.ciudad ?: "",
+                                        codigoPostal = perfil.codigoPostal ?: ""
+                                    )
+                                    perfilUsuarioRepository.guardarPerfil(local)
+                                }
+                            } catch (_: Exception) {
+                                // Evitar crash si backend tarda o falla
+                            }
                         }
                     }
                     androidx.compose.runtime.LaunchedEffect(authViewModel.token.value, authViewModel.usuarioActual.value, authViewModel.role.value) {
-                        val prefs = appCtx.getSharedPreferences("auth_prefs", Context.MODE_PRIVATE)
-                        val edit = prefs.edit()
                         val tk = authViewModel.token.value
                         val email = authViewModel.usuarioActual.value
                         val role = authViewModel.role.value
-                        if (tk.isNullOrBlank() || email.isNullOrBlank()) {
-                            edit.clear().apply()
-                        } else {
-                            edit.putString("token", tk)
-                                .putString("email", email)
-                                .putString("role", role)
-                                .apply()
+                        appCtx.dataStore.edit { prefs ->
+                            if (tk.isNullOrBlank() || email.isNullOrBlank()) {
+                                prefs.remove(TOKEN)
+                                prefs.remove(EMAIL)
+                                prefs.remove(ROLE)
+                            } else {
+                                prefs[TOKEN] = tk
+                                prefs[EMAIL] = email
+                                if (role != null) prefs[ROLE] = role else prefs.remove(ROLE)
+                            }
                         }
                     }
                     val catalogoViewModel = viewModel<CatalogoViewModel>()
@@ -112,7 +144,8 @@ class MainActivity : ComponentActivity() {
                                 BottomNavigationBar(
                                     navController = navController,
                                     isUserLoggedIn = authViewModel.usuarioActual.value != null,
-                                    isAdmin = authViewModel.esAdministrador.value
+                                    allowAdminProductos = authViewModel.canAccessBackofficeProductos(),
+                                    allowAdminUsuarios = authViewModel.canAccessBackofficeUsuarios()
                                 )
                             }
                         }
@@ -233,7 +266,8 @@ class MainActivity : ComponentActivity() {
                                         carritoVm,
                                         direccionViewModel,
                                         userEmail,
-                                        perfilViewModel
+                                        perfilViewModel,
+                                        authViewModel
                                     )
                                 } ?: run {
                                     // Si el usuario no está autenticado, redirigir al login
@@ -243,19 +277,21 @@ class MainActivity : ComponentActivity() {
                             composable("backoffice_productos") {
                                 title = "Admin Productos"
                                 val backOfficeViewModel = viewModel<BackOfficeViewModel>()
-                                if (authViewModel.esAdministrador.value) {
+                                if (authViewModel.canAccessBackofficeProductos()) {
                                     BackOfficeScreen(navController, backOfficeViewModel, authViewModel)
                                 } else {
-                                    navController.navigate("login")
+                                    authViewModel.mensaje.value = "Acceso restringido: Admin Productos"
+                                    navController.navigate("catalogo")
                                 }
                             }
                             composable("backoffice_usuarios") {
                                 title = "Admin Usuarios"
                                 val usuariosViewModel = viewModel<UsuariosViewModel>()
-                                if (authViewModel.esAdministrador.value) {
+                                if (authViewModel.canAccessBackofficeUsuarios()) {
                                     BackOfficeUsuariosScreen(navController, usuariosViewModel, authViewModel)
                                 } else {
-                                    navController.navigate("login")
+                                    authViewModel.mensaje.value = "Acceso restringido: Admin Usuarios"
+                                    navController.navigate("catalogo")
                                 }
                             }
                         }
@@ -265,3 +301,4 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
+val Context.dataStore by preferencesDataStore(name = "auth_prefs")

@@ -109,6 +109,7 @@ class DireccionViewModel(private val direccionRepository: DireccionRepository) :
     private fun validateNumero() {
         numeroError = when {
             numero.isEmpty() -> "El número es obligatorio"
+            !numero.all { it.isDigit() } -> "El número solo debe contener números"
             else -> null
         }
     }
@@ -157,7 +158,7 @@ class DireccionViewModel(private val direccionRepository: DireccionRepository) :
         validateCodigoPostal()
         validateTelefono()
 
-        return calleError == null && numeroError == null && ciudadError == null &&
+        return calleError == null && ciudadError == null &&
                 provinciaError == null && codigoPostalError == null && telefonoError == null
     }
 

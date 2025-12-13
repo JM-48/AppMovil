@@ -11,6 +11,7 @@ data class PerfilUsuario(
     var apellido: String = "",
     var telefono: String = "",
     var direccion: String = "",
+    var region: String = "",
     var ciudad: String = "",
     var codigoPostal: String = ""
 )

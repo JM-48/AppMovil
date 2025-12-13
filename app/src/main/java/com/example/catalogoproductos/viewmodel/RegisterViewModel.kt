@@ -222,6 +222,7 @@ class RegisterViewModel(
                 apellido = apellido,
                 telefono = telefono,
                 direccion = direccion,
+                region = region,
                 ciudad = comuna,
                 codigoPostal = codigoPostal
             )

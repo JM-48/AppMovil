@@ -79,6 +79,11 @@ fun PerfilUsuarioScreen(
         }
     }
 
+    LaunchedEffect(authViewModel.token.value) {
+        val tk = authViewModel.token.value ?: ""
+        if (tk.isNotBlank()) perfilViewModel.cargarPerfilRemoto(tk)
+    }
+
     Scaffold(
         containerColor = Color.Transparent,
         contentColor = Color.White,

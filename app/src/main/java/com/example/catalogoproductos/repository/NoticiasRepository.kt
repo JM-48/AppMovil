@@ -1,15 +1,14 @@
 package com.example.catalogoproductos.repository
 
-import com.example.catalogoproductos.model.GNewsResponse
 import com.example.catalogoproductos.model.Noticia
-import com.google.gson.Gson
+import com.example.catalogoproductos.network.NoticiasService
+import com.example.catalogoproductos.network.RetrofitClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.net.HttpURLConnection
-import java.net.URL
-import java.net.URLEncoder
 
 class NoticiasRepository {
+    private val service: NoticiasService = RetrofitClient.gnews.create(NoticiasService::class.java)
+
     suspend fun buscar(
         query: String,
         lang: String = "es",
@@ -18,23 +17,16 @@ class NoticiasRepository {
     ): List<Noticia> {
         require(apiKey.isNotBlank()) { "API key requerida" }
         return withContext(Dispatchers.IO) {
-            val q = URLEncoder.encode(query, "UTF-8")
-            val urlStr = "https://gnews.io/api/v4/search?q=$q&lang=$lang&max=$max&apikey=$apiKey"
-            val connection = (URL(urlStr).openConnection() as HttpURLConnection)
-            connection.requestMethod = "GET"
-            connection.connectTimeout = 15000
-            connection.readTimeout = 15000
             try {
-                val code = connection.responseCode
-                val stream = if (code in 200..299) connection.inputStream else connection.errorStream
-                val json = stream.bufferedReader().use { it.readText() }
-                if (code !in 200..299) throw RuntimeException("HTTP $code: $json")
-                val resp = Gson().fromJson(json, GNewsResponse::class.java)
+                val resp = service.search(query = query, lang = lang, max = max, apiKey = apiKey)
                 resp.articles ?: emptyList()
-            } finally {
-                connection.disconnect()
+            } catch (e: java.net.SocketTimeoutException) {
+                emptyList()
+            } catch (e: java.io.IOException) {
+                emptyList()
+            } catch (e: Exception) {
+                emptyList()
             }
         }
     }
 }
-

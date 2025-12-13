@@ -206,6 +206,7 @@ fun CatalogoScreen(
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold
                                 )
+                                
                                 val descripcion = producto.descripcion ?: ""
                                 AnimatedVisibility(
                                     visible = descripcion.isNotBlank(),

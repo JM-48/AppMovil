@@ -4,6 +4,9 @@ import android.content.Context
 import com.example.catalogoproductos.model.Producto
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import com.example.catalogoproductos.network.ProductoService
+import com.example.catalogoproductos.network.ProductoApi
+import com.example.catalogoproductos.network.RetrofitClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.BufferedWriter
@@ -14,6 +17,7 @@ import java.net.HttpURLConnection
 import java.net.URL
 
 class ProductoRepository {
+    private val service: ProductoService = RetrofitClient.backend.create(ProductoService::class.java)
 
     fun obtenerProductosDesdeAssets(context: Context, filename: String = "productos.json"): List<Producto> {
         return try {
@@ -28,17 +32,9 @@ class ProductoRepository {
 
     suspend fun crearProductoJson(
         producto: Producto,
-        urlBase: String = "https://apitest-1-95ny.onrender.com/productos"
+        token: String
     ): Producto {
         return withContext(Dispatchers.IO) {
-            val url = URL(urlBase)
-            val connection = (url.openConnection() as HttpURLConnection)
-            connection.doOutput = true
-            connection.requestMethod = "POST"
-            connection.setRequestProperty("Content-Type", "application/json")
-            connection.connectTimeout = 15000
-            connection.readTimeout = 15000
-
             val body = mapOf(
                 "nombre" to producto.nombre,
                 "descripcion" to producto.descripcion,
@@ -47,16 +43,7 @@ class ProductoRepository {
                 "imagenUrl" to producto.imagen,
                 "stock" to producto.stock
             )
-            val jsonBody = Gson().toJson(body)
-            BufferedWriter(OutputStreamWriter(connection.outputStream)).use { writer ->
-                writer.write(jsonBody)
-            }
-
-            val code = connection.responseCode
-            val stream = if (code in 200..299) connection.inputStream else connection.errorStream
-            val json = stream.bufferedReader().use { it.readText() }
-            if (code !in 200..299) throw RuntimeException("HTTP $code: $json")
-            val api = Gson().fromJson(json, ProductoApi::class.java)
+            val api = service.create("Bearer $token", body)
             Producto(
                 id = api.id,
                 nombre = api.nombre,
@@ -69,43 +56,30 @@ class ProductoRepository {
         }
     }
 
-    private data class ProductoApi(
-        val id: Int,
-        val nombre: String,
-        val descripcion: String?,
-        val precio: Double,
-        val imagen: String?,
-        val stock: Int = 0,
-        val tipo: String?
-    )
     private data class UploadResponse(val url: String)
 
-    suspend fun obtenerProductosDesdeApi(url: String = "https://apitest-1-95ny.onrender.com/productos"): List<Producto> {
+    suspend fun obtenerProductosDesdeApi(): List<Producto> {
         return withContext(Dispatchers.IO) {
-            val connection = (URL(url).openConnection() as HttpURLConnection)
             try {
-                connection.requestMethod = "GET"
-                connection.connectTimeout = 10000
-                connection.readTimeout = 10000
-                val code = connection.responseCode
-                val stream = if (code in 200..299) connection.inputStream else connection.errorStream
-                val json = stream.bufferedReader().use { it.readText() }
-                if (code !in 200..299) throw RuntimeException("HTTP $code")
-                val type = object : TypeToken<List<ProductoApi>>() {}.type
-                val apiList = Gson().fromJson<List<ProductoApi>>(json, type) ?: emptyList()
+                val apiList = service.list()
                 apiList.map {
                     Producto(
                         id = it.id,
                         nombre = it.nombre,
                         descripcion = it.descripcion,
                         precio = it.precio.toInt(),
+                        precioOriginal = it.precioOriginal?.toInt(),
                         imagen = it.imagen,
                         stock = it.stock,
                         tipo = it.tipo
                     )
                 }
-            } finally {
-                connection.disconnect()
+            } catch (e: java.net.SocketTimeoutException) {
+                emptyList()
+            } catch (e: java.io.IOException) {
+                emptyList()
+            } catch (e: Exception) {
+                emptyList()
             }
         }
     }
@@ -125,8 +99,8 @@ class ProductoRepository {
             connection.doOutput = true
             connection.requestMethod = "POST"
             connection.setRequestProperty("Content-Type", "multipart/form-data; boundary=$boundary")
-            connection.connectTimeout = 15000
-            connection.readTimeout = 15000
+            connection.connectTimeout = 60000
+            connection.readTimeout = 60000
 
             val output = DataOutputStream(connection.outputStream)
             fun writeFormField(name: String, value: String) {
@@ -165,6 +139,7 @@ class ProductoRepository {
                 nombre = api.nombre,
                 descripcion = api.descripcion,
                 precio = api.precio.toInt(),
+                precioOriginal = api.precioOriginal?.toInt(),
                 imagen = api.imagen,
                 stock = api.stock,
                 tipo = api.tipo
@@ -176,17 +151,9 @@ class ProductoRepository {
         id: Int,
         producto: Producto,
         categoriaId: Long? = null,
-        urlBase: String = "https://apitest-1-95ny.onrender.com/productos"
+        token: String
     ): Producto {
         return withContext(Dispatchers.IO) {
-            val url = URL(if (categoriaId != null) "$urlBase/$id?categoriaId=$categoriaId" else "$urlBase/$id")
-            val connection = (url.openConnection() as HttpURLConnection)
-            connection.doOutput = true
-            connection.requestMethod = "PUT"
-            connection.setRequestProperty("Content-Type", "application/json")
-            connection.connectTimeout = 15000
-            connection.readTimeout = 15000
-
             val body = mapOf(
                 "nombre" to producto.nombre,
                 "descripcion" to producto.descripcion,
@@ -194,16 +161,7 @@ class ProductoRepository {
                 "imagenUrl" to producto.imagen,
                 "stock" to producto.stock
             )
-            val jsonBody = Gson().toJson(body)
-            BufferedWriter(OutputStreamWriter(connection.outputStream)).use { writer ->
-                writer.write(jsonBody)
-            }
-
-            val code = connection.responseCode
-            val stream = if (code in 200..299) connection.inputStream else connection.errorStream
-            val json = stream.bufferedReader().use { it.readText() }
-            if (code !in 200..299) throw RuntimeException("HTTP $code: $json")
-            val api = Gson().fromJson(json, ProductoApi::class.java)
+            val api = service.update("Bearer $token", id, body)
             Producto(
                 id = api.id,
                 nombre = api.nombre,
@@ -216,22 +174,8 @@ class ProductoRepository {
         }
     }
 
-    suspend fun eliminarProducto(id: Int, urlBase: String = "https://apitest-1-95ny.onrender.com/productos") {
-        withContext(Dispatchers.IO) {
-            val connection = (URL("$urlBase/$id").openConnection() as HttpURLConnection)
-            try {
-                connection.requestMethod = "DELETE"
-                connection.connectTimeout = 10000
-                connection.readTimeout = 10000
-                val code = connection.responseCode
-                if (code !in 200..299) {
-                    val error = connection.errorStream?.bufferedReader()?.use { it.readText() } ?: ""
-                    throw RuntimeException("HTTP $code: $error")
-                }
-            } finally {
-                connection.disconnect()
-            }
-        }
+    suspend fun eliminarProducto(id: Int, token: String) {
+        withContext(Dispatchers.IO) { service.delete("Bearer $token", id) }
     }
 
     suspend fun subirImagen(
@@ -248,8 +192,8 @@ class ProductoRepository {
             if (!baseUrlHeader.isNullOrBlank()) {
                 connection.setRequestProperty("X-Base-Url", baseUrlHeader)
             }
-            connection.connectTimeout = 15000
-            connection.readTimeout = 15000
+            connection.connectTimeout = 60000
+            connection.readTimeout = 60000
 
             val output = DataOutputStream(connection.outputStream)
             output.writeBytes("--$boundary\r\n")

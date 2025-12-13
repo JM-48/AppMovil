@@ -117,7 +117,7 @@ class BackOfficeViewModel : ViewModel() {
     }
     fun updateTipo(value: String) { tipo = value; validarTipo() }
 
-    fun guardarProducto() {
+    fun guardarProducto(token: String) {
         if (validarFormulario()) {
             try {
                 val precioInt = precio.toInt()
@@ -149,7 +149,8 @@ class BackOfficeViewModel : ViewModel() {
                                 tipo = if (tipo.isBlank()) null else tipo
                             )
                             val creado = repo.crearProductoJson(
-                                producto = baseProducto
+                                producto = baseProducto,
+                                token = token
                             )
                             _productos.value = repo.obtenerProductosDesdeApi()
                             productoStatusMessage = "Producto subido correctamente"
@@ -177,7 +178,8 @@ class BackOfficeViewModel : ViewModel() {
                             val actualizado = repo.actualizarProductoJson(
                                 id = baseProducto.id,
                                 producto = baseProducto,
-                                categoriaId = null
+                                categoriaId = null,
+                                token = token
                             )
                             _productos.value = repo.obtenerProductosDesdeApi()
                             productoStatusMessage = "Producto actualizado correctamente"
@@ -197,7 +199,7 @@ class BackOfficeViewModel : ViewModel() {
         }
     }
 
-    fun crearProducto() {
+    fun crearProducto(token: String) {
         if (validarFormulario()) {
             try {
                 val precioInt = precio.toInt()
@@ -229,7 +231,8 @@ class BackOfficeViewModel : ViewModel() {
                             tipo = if (tipo.isBlank()) null else tipo
                         )
                         val creado = repo.crearProductoJson(
-                            producto = baseProducto
+                            producto = baseProducto,
+                            token = token
                         )
                         _productos.value = repo.obtenerProductosDesdeApi()
                         productoStatusMessage = "Producto subido correctamente"
@@ -249,11 +252,11 @@ class BackOfficeViewModel : ViewModel() {
         }
     }
 
-    fun eliminarProducto(id: Int) {
+    fun eliminarProducto(id: Int, token: String) {
         viewModelScope.launch {
             try {
                 val repo = ProductoRepository()
-                repo.eliminarProducto(id)
+                repo.eliminarProducto(id, token)
                 _productos.value = repo.obtenerProductosDesdeApi()
                 if (_productoSeleccionado.value?.id == id) {
                     nuevoProducto()

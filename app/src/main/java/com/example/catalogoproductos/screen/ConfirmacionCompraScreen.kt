@@ -32,7 +32,8 @@ fun ConfirmacionCompraScreen(
     carritoViewModel: CarritoViewModel,
     direccionViewModel: DireccionViewModel,
     email: String,
-    perfilUsuarioViewModel: PerfilUsuarioViewModel
+    perfilUsuarioViewModel: PerfilUsuarioViewModel,
+    authViewModel: com.example.catalogoproductos.viewmodel.AuthViewModel
 ) {
     val scrollState = rememberScrollState()
     val itemsCarrito by carritoViewModel.itemsCarrito.collectAsState(initial = emptyList())
@@ -42,6 +43,10 @@ fun ConfirmacionCompraScreen(
 
     LaunchedEffect(email) {
         direccionViewModel.cargarDireccionDefault(email)
+    }
+    LaunchedEffect(authViewModel.token.value) {
+        val tk = authViewModel.token.value ?: ""
+        if (tk.isNotBlank()) perfilUsuarioViewModel.cargarPerfilRemoto(tk)
     }
     
     var estadoCompra by remember { mutableStateOf<EstadoCompra>(EstadoCompra.EnProceso) }
@@ -97,8 +102,14 @@ fun ConfirmacionCompraScreen(
                                 boletaApellido = perfilUsuarioViewModel.apellido
                                 boletaDireccion = when {
                                     direccionDefault != null -> {
-                                        val d = direccionDefault
-                                        "${d!!.calle} ${d.numero}, ${d.ciudad}, ${d.provincia}, ${d.codigoPostal}"
+                                    val d = direccionDefault!!
+                                    val dir = listOf(
+                                        listOfNotNull(d.calle.takeIf { it.isNotBlank() }, d.numero.takeIf { it.isNotBlank() }).joinToString(" "),
+                                        d.ciudad.takeIf { it.isNotBlank() },
+                                        d.provincia.takeIf { it.isNotBlank() },
+                                        d.codigoPostal.takeIf { it.isNotBlank() }
+                                    ).filterNotNull().joinToString(", ")
+                                    dir
                                     }
                                     perfilFallback != null -> {
                                         "${perfilFallback.direccion}, ${perfilFallback.ciudad}, ${perfilFallback.codigoPostal}"
@@ -372,6 +383,35 @@ fun CompraRealizadaContent(
                 ) {
                     Text(text = "Total", fontWeight = FontWeight.Bold)
                     Text(text = total, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                Divider()
+                // Desglose de IVA
+                val totalInt = items.sumOf { it.precio * it.cantidad }
+                val netFmt = com.example.catalogoproductos.util.CurrencyUtils.formatNetFromGrossCLP(totalInt)
+                val taxFmt = com.example.catalogoproductos.util.CurrencyUtils.formatTaxFromGrossCLP(totalInt)
+                Column(modifier = Modifier.padding(top = 8.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(text = "Precio sin IVA")
+                        Text(text = netFmt)
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(text = "IVA (19%)")
+                        Text(text = taxFmt)
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(text = "Precio final con IVA", fontWeight = FontWeight.Bold)
+                        Text(text = total, fontWeight = FontWeight.Bold)
+                    }
                 }
             }
         }

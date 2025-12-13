@@ -182,7 +182,7 @@ fun UsuarioForm(viewModel: UsuariosViewModel, isCreate: Boolean, tokenProvider: 
         OutlinedTextField(value = viewModel.codigoPostal, onValueChange = { viewModel.updateCodigoPostal(it) }, label = { Text("Código Postal") }, modifier = Modifier.fillMaxWidth(), keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next), singleLine = true)
 
         var expandedRol by remember { mutableStateOf(false) }
-        val roles = listOf("ADMIN", "USER")
+        val roles = listOf("ADMIN", "USER_AD", "PROD_AD", "CLIENT")
         ExposedDropdownMenuBox(expanded = expandedRol, onExpandedChange = { expandedRol = !expandedRol }) {
             OutlinedTextField(value = viewModel.role, onValueChange = {}, readOnly = true, label = { Text("Rol") }, trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedRol) }, modifier = Modifier.menuAnchor().fillMaxWidth(), singleLine = true, isError = viewModel.roleError != null)
             ExposedDropdownMenu(expanded = expandedRol, onDismissRequest = { expandedRol = false }) {

@@ -28,7 +28,7 @@ class UsuariosViewModel : ViewModel() {
     var ciudad by mutableStateOf("")
     var codigoPostal by mutableStateOf("")
     var region by mutableStateOf("")
-    var role by mutableStateOf("USER")
+    var role by mutableStateOf("CLIENT")
 
     var emailError by mutableStateOf<String?>(null)
     var passwordError by mutableStateOf<String?>(null)
@@ -65,7 +65,7 @@ class UsuariosViewModel : ViewModel() {
         direccion = u.direccion ?: ""
         ciudad = u.ciudad ?: ""
         codigoPostal = u.codigoPostal ?: ""
-        role = u.role ?: "USER"
+        role = normalizeRole(u.role)
         password = ""
         limpiarErrores()
     }
@@ -80,7 +80,7 @@ class UsuariosViewModel : ViewModel() {
         ciudad = ""
         codigoPostal = ""
         password = ""
-        role = "USER"
+        role = "CLIENT"
         limpiarErrores()
     }
 
@@ -93,7 +93,17 @@ class UsuariosViewModel : ViewModel() {
     fun updateCiudad(v: String) { ciudad = v }
     fun updateRegion(v: String) { region = v }
     fun updateCodigoPostal(v: String) { codigoPostal = v }
-    fun updateRole(v: String) { role = v; validateRole() }
+    fun updateRole(v: String) { role = normalizeRole(v); validateRole() }
+
+    private fun normalizeRole(input: String?): String {
+        val r = input?.uppercase()?.trim()
+        return when (r) {
+            null, "" -> ""
+            "ADMIN", "USER_AD", "PROD_AD", "CLIENT" -> r
+            "USER" -> "CLIENT"
+            else -> r ?: ""
+        }
+    }
 
     private fun validateEmail(): Boolean {
         return when {
@@ -117,9 +127,10 @@ class UsuariosViewModel : ViewModel() {
         }
     }
     private fun validateRole(): Boolean {
-        return when {
-            role.isBlank() -> { roleError = "El rol es obligatorio"; false }
-            else -> { roleError = null; true }
+        if (role.isBlank()) { roleError = "El rol es obligatorio"; return false }
+        return when (normalizeRole(role)) {
+            "ADMIN", "USER_AD", "PROD_AD", "CLIENT" -> { roleError = null; true }
+            else -> { roleError = "Rol inválido"; false }
         }
     }
 
@@ -144,7 +155,6 @@ class UsuariosViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 val repo = UsuarioRepository()
-                statusMessage = "Subiendo usuario..."
                 val body = mutableMapOf<String, Any?>(
                     "email" to email,
                     "password" to (if (password.isBlank()) null else password),

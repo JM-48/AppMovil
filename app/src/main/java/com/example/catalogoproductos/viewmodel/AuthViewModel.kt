@@ -16,6 +16,28 @@ class AuthViewModel : ViewModel() {
 
     private val repo = AuthRepository()
 
+    private fun normalizeRole(input: String?): String {
+        val r = input?.uppercase()?.trim()
+        return when (r) {
+            "ADMIN", "USER_AD", "PROD_AD", "CLIENT" -> r
+            else -> "CLIENT"
+        }
+    }
+
+    fun canAccessBackofficeProductos(): Boolean {
+        return when (normalizeRole(role.value)) {
+            "ADMIN", "PROD_AD" -> true
+            else -> false
+        }
+    }
+
+    fun canAccessBackofficeUsuarios(): Boolean {
+        return when (normalizeRole(role.value)) {
+            "ADMIN", "USER_AD" -> true
+            else -> false
+        }
+    }
+
     fun registrar(nombre: String, email: String, password: String) {
         mensaje.value = "Usa el formulario de registro"
     }
@@ -33,7 +55,7 @@ class AuthViewModel : ViewModel() {
                 // Obtener perfil con rol
                 val me = repo.me(tk)
                 usuarioActual.value = me.email ?: email
-                role.value = me.role ?: resp.role
+                role.value = normalizeRole(me.role ?: resp.role)
                 esAdministrador.value = (role.value?.equals("ADMIN", ignoreCase = true) == true)
                 mensaje.value = if (esAdministrador.value) "Inicio de sesión como administrador" else "Inicio de sesión exitoso"
             } catch (e: Exception) {
@@ -46,7 +68,7 @@ class AuthViewModel : ViewModel() {
         usuarioActual.value = null
         esAdministrador.value = false
         token.value = null
-        role.value = null
+        role.value = "CLIENT"
         mensaje.value = "Sesión cerrada"
     }
 }

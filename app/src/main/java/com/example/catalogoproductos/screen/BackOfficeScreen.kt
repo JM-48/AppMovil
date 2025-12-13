@@ -113,7 +113,8 @@ fun BackOfficeScreen(
                     onDismissRequest = { showDeleteDialog = false },
                     confirmButton = {
                         TextButton(onClick = {
-                            viewModel.eliminarProducto(productoAEliminar!!.id)
+                            val tk = authViewModel.token.value ?: ""
+                            viewModel.eliminarProducto(productoAEliminar!!.id, tk)
                             showDeleteDialog = false
                         }) { Text("Eliminar") }
                     },
@@ -178,11 +179,11 @@ fun BackOfficeScreen(
                         showDeleteDialog = true
                     }
                 )
-                1 -> FormularioTab(viewModel = viewModel, title = "Crear Producto", isCreate = true)
+                1 -> FormularioTab(viewModel = viewModel, title = "Crear Producto", isCreate = true, authViewModel = authViewModel)
                 2 -> {
                     val seleccionado by viewModel.productoSeleccionado.collectAsState()
                     if (seleccionado != null) {
-                        FormularioTab(viewModel = viewModel, title = "Editar Producto", isCreate = false)
+                        FormularioTab(viewModel = viewModel, title = "Editar Producto", isCreate = false, authViewModel = authViewModel)
                     } else {
                         Text(
                             text = "Selecciona un producto en la lista para editar",
@@ -252,7 +253,7 @@ fun ProductoItem(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun FormularioTab(viewModel: BackOfficeViewModel, title: String, isCreate: Boolean) {
+fun FormularioTab(viewModel: BackOfficeViewModel, title: String, isCreate: Boolean, authViewModel: AuthViewModel) {
     val scrollState = rememberScrollState()
     val context = LocalContext.current
     var tempImageFile by remember { mutableStateOf<File?>(null) }
@@ -507,12 +508,13 @@ fun FormularioTab(viewModel: BackOfficeViewModel, title: String, isCreate: Boole
         }
         Spacer(modifier = Modifier.height(16.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Button(onClick = { 
+            Button(onClick = {
                 Log.d("BackOffice", "Botón Guardar presionado ($title)")
+                val tk = authViewModel.token.value ?: ""
                 if (isCreate) {
-                    viewModel.crearProducto()
+                    viewModel.crearProducto(tk)
                 } else {
-                    viewModel.guardarProducto()
+                    viewModel.guardarProducto(tk)
                 }
             }) {
                 Text("Guardar")
