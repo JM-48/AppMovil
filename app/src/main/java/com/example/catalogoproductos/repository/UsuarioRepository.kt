@@ -118,7 +118,7 @@ class UsuarioRepository {
         }
     }
 
-    suspend fun actualizar(token: String, id: Int, body: Map<String, Any?>, urlBase: String = "https://apitest-1-95ny.onrender.com/users"): UsuarioDto {
+    suspend fun actualizar(token: String, id: Int, body: Map<String, Any?>, urlBase: String = "https://apitest-1-95ny.onrender.com/api/v1/users"): UsuarioDto {
         return withContext(Dispatchers.IO) {
             val url = URL("$urlBase/$id")
             val connection = (url.openConnection() as HttpURLConnection)

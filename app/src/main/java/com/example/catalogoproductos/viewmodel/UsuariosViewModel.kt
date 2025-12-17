@@ -99,7 +99,7 @@ class UsuariosViewModel : ViewModel() {
         val r = input?.uppercase()?.trim()
         return when (r) {
             null, "" -> ""
-            "ADMIN", "USER_AD", "PROD_AD", "CLIENT" -> r
+            "ADMIN", "USER_AD", "PROD_AD", "CLIENT", "VENDEDOR" -> r
             "USER" -> "CLIENT"
             else -> r ?: ""
         }
@@ -129,7 +129,7 @@ class UsuariosViewModel : ViewModel() {
     private fun validateRole(): Boolean {
         if (role.isBlank()) { roleError = "El rol es obligatorio"; return false }
         return when (normalizeRole(role)) {
-            "ADMIN", "USER_AD", "PROD_AD", "CLIENT" -> { roleError = null; true }
+            "ADMIN", "USER_AD", "PROD_AD", "CLIENT", "VENDEDOR" -> { roleError = null; true }
             else -> { roleError = "Rol inválido"; false }
         }
     }
@@ -154,6 +154,7 @@ class UsuariosViewModel : ViewModel() {
         if (!validarFormulario()) return
         viewModelScope.launch {
             try {
+                Log.d("BackOfficeUsuarios", "GuardarUsuario: Inicio. Email=$email, Role=$role")
                 val repo = UsuarioRepository()
                 val body = mutableMapOf<String, Any?>(
                     "email" to email,
@@ -169,16 +170,20 @@ class UsuariosViewModel : ViewModel() {
                 )
                 val sel = _usuarioSeleccionado.value
                 val result = if (sel == null) {
+                    Log.d("BackOfficeUsuarios", "GuardarUsuario: Creando nuevo usuario")
                     repo.crear(token, body)
                 } else {
+                    Log.d("BackOfficeUsuarios", "GuardarUsuario: Actualizando usuario id=${sel.id}")
                     repo.actualizar(token, sel.id ?: 0, body)
                 }
                 val created = sel == null
                 _usuarios.value = repo.listar(token)
                 statusMessage = if (created) "Usuario creado correctamente" else "Usuario actualizado correctamente"
+                Log.d("BackOfficeUsuarios", "GuardarUsuario: Éxito. Created=$created")
             } catch (e: Exception) {
                 errorMessage = "Error al guardar el usuario: ${e.message}"
                 statusMessage = errorMessage
+                Log.e("BackOfficeUsuarios", "GuardarUsuario: Error", e)
             }
         }
     }
@@ -187,14 +192,17 @@ class UsuariosViewModel : ViewModel() {
         if (token.isBlank()) { statusMessage = "Token de administrador no disponible"; return }
         viewModelScope.launch {
             try {
+                Log.d("BackOfficeUsuarios", "EliminarUsuario: id=$id")
                 val repo = UsuarioRepository()
                 repo.eliminar(token, id)
                 _usuarios.value = repo.listar(token)
                 if (_usuarioSeleccionado.value?.id == id) nuevoUsuario()
                 statusMessage = "Usuario eliminado correctamente"
+                Log.d("BackOfficeUsuarios", "EliminarUsuario: Éxito")
             } catch (e: Exception) {
                 errorMessage = "Error al eliminar el usuario: ${e.message}"
                 statusMessage = errorMessage
+                Log.e("BackOfficeUsuarios", "EliminarUsuario: Error", e)
             }
         }
     }

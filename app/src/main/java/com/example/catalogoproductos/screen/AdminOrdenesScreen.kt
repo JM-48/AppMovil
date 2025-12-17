@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ExpandLess
@@ -91,11 +92,19 @@ fun AdminOrdenesScreen(
         }
 
         if (showDialog && ordenSeleccionada != null) {
-            EditarEstadoOrdenDialog(
+            EditarOrdenDialog(
                 orden = ordenSeleccionada!!,
                 onDismiss = { showDialog = false },
-                onConfirm = { nuevoEstado ->
-                    viewModel.actualizarEstadoOrden(ordenSeleccionada!!.id, nuevoEstado)
+                onConfirm = { nuevoEstado, dest, dir, reg, ciu, cp ->
+                    viewModel.actualizarOrden(
+                        ordenId = ordenSeleccionada!!.id,
+                        nuevoEstado = nuevoEstado,
+                        destinatario = dest,
+                        direccion = dir,
+                        region = reg,
+                        ciudad = ciu,
+                        codigoPostal = cp
+                    )
                     showDialog = false
                 }
             )
@@ -147,7 +156,7 @@ fun AdminOrdenItemCard(
                     )
                     StatusChip(status = orden.status)
                     IconButton(onClick = onEditClick) {
-                        Icon(Icons.Default.Edit, contentDescription = "Editar Estado")
+                        Icon(Icons.Default.Edit, contentDescription = "Editar Orden")
                     }
                 }
             }
@@ -177,19 +186,38 @@ fun AdminOrdenItemCard(
 }
 
 @Composable
-fun EditarEstadoOrdenDialog(
+fun EditarOrdenDialog(
     orden: OrdenDTO,
     onDismiss: () -> Unit,
-    onConfirm: (String) -> Unit
+    onConfirm: (String, String, String, String, String, String) -> Unit
 ) {
-    val estados = listOf("PENDING", "PAID", "CONFIRMADA", "SHIPPED", "DELIVERED", "CANCELLED", "REJECTED")
-    var estadoSeleccionado by remember { mutableStateOf(orden.status) }
+    // Solo permitimos estos 3 estados para edición, mapeados a los valores del backend
+    val estadosMap = mapOf(
+        "PENDING" to "Pendiente",
+        "PAID" to "Confirmada",
+        "CANCELLED" to "Rechazada"
+    )
+    val estados = estadosMap.keys.toList()
+    
+    var estadoSeleccionado by remember { mutableStateOf(if (estados.contains(orden.status)) orden.status else "PENDING") }
+    
+    // Campos editables
+    var destinatario by remember { mutableStateOf(orden.destinatario ?: "") }
+    var direccion by remember { mutableStateOf(orden.direccion ?: "") }
+    var region by remember { mutableStateOf(orden.region ?: "") }
+    var ciudad by remember { mutableStateOf(orden.ciudad ?: "") }
+    var codigoPostal by remember { mutableStateOf(orden.codigoPostal ?: "") }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Actualizar Estado de Orden #${orden.id}") },
+        title = { Text("Editar Orden #${orden.id}") },
         text = {
-            Column {
+            Column(
+                modifier = Modifier
+                    .verticalScroll(androidx.compose.foundation.rememberScrollState())
+                    .fillMaxWidth()
+            ) {
+                Text("Estado:", fontWeight = FontWeight.Bold, modifier = Modifier.padding(vertical = 8.dp))
                 estados.forEach { estado ->
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
@@ -203,16 +231,50 @@ fun EditarEstadoOrdenDialog(
                             onClick = { estadoSeleccionado = estado }
                         )
                         Text(
-                            text = estado,
+                            text = estadosMap[estado] ?: estado,
                             modifier = Modifier.padding(start = 8.dp)
                         )
                     }
                 }
+                
+                Divider(modifier = Modifier.padding(vertical = 8.dp))
+                Text("Datos de envío:", fontWeight = FontWeight.Bold, modifier = Modifier.padding(vertical = 8.dp))
+                
+                OutlinedTextField(
+                    value = destinatario,
+                    onValueChange = { destinatario = it },
+                    label = { Text("Destinatario") },
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                )
+                OutlinedTextField(
+                    value = direccion,
+                    onValueChange = { direccion = it },
+                    label = { Text("Dirección") },
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                )
+                OutlinedTextField(
+                    value = region,
+                    onValueChange = { region = it },
+                    label = { Text("Región") },
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                )
+                OutlinedTextField(
+                    value = ciudad,
+                    onValueChange = { ciudad = it },
+                    label = { Text("Ciudad") },
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                )
+                OutlinedTextField(
+                    value = codigoPostal,
+                    onValueChange = { codigoPostal = it },
+                    label = { Text("Código Postal") },
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                )
             }
         },
         confirmButton = {
             Button(
-                onClick = { onConfirm(estadoSeleccionado) }
+                onClick = { onConfirm(estadoSeleccionado, destinatario, direccion, region, ciudad, codigoPostal) }
             ) {
                 Text("Guardar")
             }

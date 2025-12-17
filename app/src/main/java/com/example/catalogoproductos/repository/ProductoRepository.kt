@@ -159,7 +159,8 @@ class ProductoRepository {
                 "descripcion" to producto.descripcion,
                 "precio" to producto.precio.toDouble(),
                 "imagenUrl" to producto.imagen,
-                "stock" to producto.stock
+                "stock" to producto.stock,
+                "tipo" to producto.tipo
             )
             val api = service.update("Bearer $token", id, body)
             Producto(

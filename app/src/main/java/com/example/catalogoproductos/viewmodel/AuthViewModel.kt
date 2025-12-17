@@ -19,14 +19,21 @@ class AuthViewModel : ViewModel() {
     private fun normalizeRole(input: String?): String {
         val r = input?.uppercase()?.trim()
         return when (r) {
-            "ADMIN", "USER_AD", "PROD_AD", "CLIENT" -> r
+            "ADMIN", "USER_AD", "PROD_AD", "CLIENT", "VENDEDOR" -> r
             else -> "CLIENT"
         }
     }
 
     fun canAccessBackofficeProductos(): Boolean {
         return when (normalizeRole(role.value)) {
-            "ADMIN", "PROD_AD" -> true
+            "ADMIN", "PROD_AD", "VENDEDOR" -> true
+            else -> false
+        }
+    }
+
+    fun canAccessAdminOrdenes(): Boolean {
+        return when (normalizeRole(role.value)) {
+            "ADMIN", "VENDEDOR" -> true
             else -> false
         }
     }

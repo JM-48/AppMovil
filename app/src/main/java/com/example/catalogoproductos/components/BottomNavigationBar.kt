@@ -19,6 +19,8 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.compose.ui.graphics.Color
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 
 data class BottomNavItem(
     val name: String,
@@ -32,37 +34,50 @@ fun BottomNavigationBar(
     navController: NavController,
     isUserLoggedIn: Boolean,
     allowAdminProductos: Boolean,
-    allowAdminUsuarios: Boolean
+    allowAdminOrdenes: Boolean,
+    allowAdminUsuarios: Boolean,
+    isAdmin: Boolean = false
 ) {
-    val baseItems = listOf(
-        BottomNavItem(
-            name = "Catálogo",
-            route = "catalogo",
-            icon = Icons.Default.Home
-        ),
-        BottomNavItem(
-            name = "Noticias",
-            route = "noticias",
-            icon = Icons.Default.List
-        ),
-        BottomNavItem(
-            name = "Mis Órdenes",
-            route = "mis_ordenes",
-            icon = Icons.Default.Description,
-            requiresAuth = true
-        ),
-        BottomNavItem(
-            name = "Carrito",
-            route = "carrito",
-            icon = Icons.Default.ShoppingCart
-        ),
-        BottomNavItem(
-            name = "Perfil",
-            route = "perfil",
-            icon = Icons.Default.Person,
-            requiresAuth = true
+    val baseItems = if (isAdmin) {
+        listOf(
+            BottomNavItem(
+                name = "Perfil",
+                route = "perfil",
+                icon = Icons.Default.Person,
+                requiresAuth = true
+            )
         )
-    )
+    } else {
+        listOf(
+            BottomNavItem(
+                name = "Catálogo",
+                route = "catalogo",
+                icon = Icons.Default.Home
+            ),
+            BottomNavItem(
+                name = "Noticias",
+                route = "noticias",
+                icon = Icons.Default.List
+            ),
+            BottomNavItem(
+                name = "Mis Órdenes",
+                route = "mis_ordenes",
+                icon = Icons.Default.Description,
+                requiresAuth = true
+            ),
+            BottomNavItem(
+                name = "Carrito",
+                route = "carrito",
+                icon = Icons.Default.ShoppingCart
+            ),
+            BottomNavItem(
+                name = "Perfil",
+                route = "perfil",
+                icon = Icons.Default.Person,
+                requiresAuth = true
+            )
+        )
+    }
 
     val adminItems = buildList {
         if (allowAdminProductos) {
@@ -73,6 +88,8 @@ fun BottomNavigationBar(
                     icon = Icons.Default.Work
                 )
             )
+        }
+        if (allowAdminOrdenes) {
             add(
                 BottomNavItem(
                     name = "Admin Órdenes",
@@ -100,7 +117,14 @@ fun BottomNavigationBar(
             if (!item.requiresAuth || isUserLoggedIn) {
                 NavigationBarItem(
                     icon = { Icon(item.icon, contentDescription = item.name) },
-                    label = { Text(text = item.name) },
+                    label = { 
+                        Text(
+                            text = item.name, 
+                            textAlign = TextAlign.Center,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
+                        ) 
+                    },
                     selected = currentRoute == item.route,
                     colors = NavigationBarItemDefaults.colors(
                         selectedIconColor = MaterialTheme.colorScheme.primary,

@@ -176,9 +176,25 @@ fun DetalleOrdenItem(item: DetalleOrdenDTO) {
 fun StatusChip(status: String) {
     val color = when (status) {
         "PAID", "CONFIRMADA", "COMPLETED" -> Color.Green
-        "PENDING", "EnProceso" -> Color(0xFFFFA500) // Orange
-        "CANCELLED", "REJECTED" -> Color.Red
+        "PENDING", "EnProceso", "PENDIENTE" -> Color(0xFFFFA500) // Orange
+        "CANCELLED", "REJECTED", "RECHAZADA" -> Color.Red
         else -> Color.Gray
+    }
+
+    val textoEspanol = when (status) {
+        "CART" -> "Carrito"
+        "PENDING" -> "Pendiente"
+        "PAID" -> "Recibido"
+        "CANCELLED" -> "Cancelado"
+        "PENDIENTE" -> "Pendiente"
+        "CONFIRMADA" -> "Confirmada"
+        "RECHAZADA" -> "Rechazada"
+        "SHIPPED" -> "Enviado"
+        "DELIVERED" -> "Entregado"
+        "COMPLETED" -> "Completado"
+        "REJECTED" -> "Rechazada"
+        "EnProceso" -> "En Proceso"
+        else -> status
     }
     
     Surface(
@@ -187,7 +203,7 @@ fun StatusChip(status: String) {
         modifier = Modifier.padding(top = 4.dp)
     ) {
         Text(
-            text = status,
+            text = textoEspanol,
             color = color,
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
             style = MaterialTheme.typography.labelSmall,

@@ -17,9 +17,24 @@ class OrdenRepository(private val ordenService: OrdenService) {
         emit(ordenService.getAllOrders(bearer))
     }
 
-    suspend fun updateOrder(token: String, id: Int, status: String): OrdenDTO {
+    suspend fun updateOrder(
+        token: String, 
+        id: Int, 
+        status: String,
+        destinatario: String? = null,
+        direccion: String? = null,
+        region: String? = null,
+        ciudad: String? = null,
+        codigoPostal: String? = null
+    ): OrdenDTO {
         val bearer = if (token.startsWith("Bearer ")) token else "Bearer $token"
-        val body = mapOf("status" to status)
+        val body = mutableMapOf<String, Any>("status" to status)
+        destinatario?.let { body["destinatario"] = it }
+        direccion?.let { body["direccion"] = it }
+        region?.let { body["region"] = it }
+        ciudad?.let { body["ciudad"] = it }
+        codigoPostal?.let { body["codigoPostal"] = it }
+        
         return ordenService.updateOrder(bearer, id, body)
     }
 }

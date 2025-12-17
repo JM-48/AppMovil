@@ -49,11 +49,28 @@ class AdminOrdenesViewModel(
         }
     }
 
-    fun actualizarEstadoOrden(ordenId: Int, nuevoEstado: String) {
+    fun actualizarOrden(
+        ordenId: Int, 
+        nuevoEstado: String,
+        destinatario: String,
+        direccion: String,
+        region: String,
+        ciudad: String,
+        codigoPostal: String
+    ) {
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                repository.updateOrder(token, ordenId, nuevoEstado)
+                repository.updateOrder(
+                    token, 
+                    ordenId, 
+                    nuevoEstado,
+                    destinatario,
+                    direccion,
+                    region,
+                    ciudad,
+                    codigoPostal
+                )
                 _mensaje.value = "Orden actualizada correctamente"
                 cargarTodasLasOrdenes() // Recargar lista
             } catch (e: Exception) {

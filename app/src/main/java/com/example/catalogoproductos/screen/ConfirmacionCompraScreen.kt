@@ -119,7 +119,7 @@ fun ConfirmacionCompraScreen(
                             totalCarrito = totalCarrito,
                             direccion = direccionDefault,
                             perfilFallback = perfilFallback,
-                            3metodoEnvio = metodoEnvio,
+                            metodoEnvio = metodoEnvio,
                             onMetodoEnvioChange = { metodoEnvio = it },
                             metodoPago = metodoPago,
                             onMetodoPagoChange = { metodoPago = it },

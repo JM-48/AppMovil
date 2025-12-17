@@ -149,7 +149,9 @@ class MainActivity : ComponentActivity() {
                                     navController = navController,
                                     isUserLoggedIn = authViewModel.usuarioActual.value != null,
                                     allowAdminProductos = authViewModel.canAccessBackofficeProductos(),
-                                    allowAdminUsuarios = authViewModel.canAccessBackofficeUsuarios()
+                                    allowAdminOrdenes = authViewModel.canAccessAdminOrdenes(),
+                                    allowAdminUsuarios = authViewModel.canAccessBackofficeUsuarios(),
+                                    isAdmin = authViewModel.esAdministrador.value
                                 )
                             }
                         }
@@ -318,7 +320,7 @@ class MainActivity : ComponentActivity() {
                             composable("admin_ordenes") {
                                 title = "Admin Órdenes"
                                 val token = authViewModel.token.value
-                                if (authViewModel.canAccessBackofficeProductos() && !token.isNullOrBlank()) {
+                                if (authViewModel.canAccessAdminOrdenes() && !token.isNullOrBlank()) {
                                     val adminOrdenesViewModel = viewModel<AdminOrdenesViewModel>(
                                         factory = AdminOrdenesViewModel.Factory(ordenRepository, token)
                                     )
