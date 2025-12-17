@@ -6,6 +6,8 @@ import androidx.lifecycle.viewModelScope
 import com.example.catalogoproductos.model.ItemCarrito
 import com.example.catalogoproductos.model.Producto
 import com.example.catalogoproductos.repository.CarritoRepository
+import com.example.catalogoproductos.repository.CheckoutRepository
+import com.example.catalogoproductos.network.CompraDTO
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -16,8 +18,19 @@ import java.util.Locale
 
 class CarritoViewModel(
     private val carritoRepository: CarritoRepository,
+    private val checkoutRepository: CheckoutRepository,
     private val emailUsuario: String
 ) : ViewModel() {
+
+    sealed class CheckoutState {
+        object Idle : CheckoutState()
+        object Loading : CheckoutState()
+        data class Success(val compra: CompraDTO) : CheckoutState()
+        data class Error(val message: String) : CheckoutState()
+    }
+
+    private val _checkoutState = MutableStateFlow<CheckoutState>(CheckoutState.Idle)
+    val checkoutState: StateFlow<CheckoutState> = _checkoutState.asStateFlow()
 
     private val _itemsCarrito = MutableStateFlow<List<ItemCarrito>>(emptyList())
     val itemsCarrito: StateFlow<List<ItemCarrito>> = _itemsCarrito.asStateFlow()
@@ -99,14 +112,77 @@ class CarritoViewModel(
         }
     }
 
+    fun realizarCheckout(
+        token: String,
+        direccion: String,
+        region: String,
+        ciudad: String,
+        codigoPostal: String,
+        destinatario: String,
+        metodoPago: String,
+        metodoEnvio: String
+    ) {
+        viewModelScope.launch {
+            _checkoutState.value = CheckoutState.Loading
+            try {
+                val items = _itemsCarrito.value
+                if (items.isEmpty()) {
+                    _checkoutState.value = CheckoutState.Error("El carrito está vacío")
+                    return@launch
+                }
+                
+                val detalleItems = items.map {
+                    com.example.catalogoproductos.network.DetalleOrdenRequest(
+                        productoId = it.productoId.toString(),
+                        nombre = it.nombre,
+                        precioUnitario = it.precio.toDouble(),
+                        cantidad = it.cantidad
+                    )
+                }
+                
+                val total = items.sumOf { it.precio * it.cantidad }.toDouble()
+                
+                val request = com.example.catalogoproductos.network.CheckoutRequest(
+                    items = detalleItems,
+                    total = total,
+                    metodoEnvio = metodoEnvio,
+                    metodoPago = metodoPago,
+                    destinatario = destinatario,
+                    direccion = direccion,
+                    region = region,
+                    ciudad = ciudad,
+                    codigoPostal = codigoPostal
+                )
+                
+                // 1. Crear Orden (Checkout)
+                val orden = checkoutRepository.checkout(token, request)
+                
+                // 2. Confirmar Orden (Simulado inmediato)
+                val compra = checkoutRepository.confirm(token, orden.id, "PAY-SIMULADO-${System.currentTimeMillis()}")
+                
+                // 3. Vaciar carrito local
+                vaciarCarrito()
+                
+                _checkoutState.value = CheckoutState.Success(compra)
+            } catch (e: Exception) {
+                _checkoutState.value = CheckoutState.Error(e.message ?: "Error en checkout")
+            }
+        }
+    }
+    
+    fun resetCheckoutState() {
+        _checkoutState.value = CheckoutState.Idle
+    }
+
     class Factory(
         private val carritoRepository: CarritoRepository,
+        private val checkoutRepository: CheckoutRepository,
         private val emailUsuario: String
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             if (modelClass.isAssignableFrom(CarritoViewModel::class.java)) {
-                return CarritoViewModel(carritoRepository, emailUsuario) as T
+                return CarritoViewModel(carritoRepository, checkoutRepository, emailUsuario) as T
             }
             throw IllegalArgumentException("Unknown ViewModel class")
         }

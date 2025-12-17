@@ -1,0 +1,134 @@
+Cambios recientes para la app móvil — API v1
+
+1. Versionado de API
+- Todas las rutas públicas y protegidas quedan bajo el prefijo: /api/v1
+- Reemplazos:
+  - /auth/** → /api/v1/auth/**
+  - /productos/** → /api/v1/productos/**
+  - /users/** → /api/v1/users/**
+  - /imagenes/** → /api/v1/imagenes/**
+  - Nuevas: /api/v1/cart/**, /api/v1/checkout/**, /api/v1/orders/**
+
+2. Seguridad y roles
+- Roles soportados: ADMIN, USER_AD, PROD_AD, VENDEDOR, CLIENT (alias USER aceptado y mapeado a CLIENT)
+- Reglas relevantes:
+  - Productos (crear/editar/eliminar): ADMIN, PROD_AD, VENDEDOR
+  - Usuarios (admin): ADMIN, USER_AD
+  - Perfil personal: PATCH /api/v1/users/me (autenticado)
+  - Carrito y Checkout: CLIENT o ADMIN
+  - Órdenes admin: GET /api/v1/orders/admin (ADMIN)
+- Constraint DB ajustada automáticamente para permitir VENDEDOR.
+
+3. Modelo y DTOs
+- Producto: el campo JSON de categoría es "tipo" (se mapea a categoriaNombre internamente).
+- Nuevos DTOs en respuestas:
+  - DetalleOrdenDTO: { productoId, nombre, precioUnitario, cantidad, total, imagen }
+  - OrdenDTO: { id, status, total, destinatario, direccion, region, ciudad, codigoPostal, items: DetalleOrdenDTO[] }
+  - CompraDTO: { id, ordenId, estado, monto, referenciaPago, fechaPago }
+
+4. Nuevos endpoints (carrito, checkout, órdenes)
+- Carrito (/api/v1/cart):
+  - GET /api/v1/cart → OrdenDTO (estado CART) con items
+  - POST /api/v1/cart/items → Body: { productoId, cantidad } → OrdenDTO actualizado
+  - PUT /api/v1/cart/items/{productoId} → Body: { cantidad } → OrdenDTO actualizado
+  - DELETE /api/v1/cart/items/{productoId} → OrdenDTO actualizado
+- Checkout (/api/v1/checkout):
+  - POST /api/v1/checkout → Body: Direccion completa → OrdenDTO con status PENDING
+  - POST /api/v1/checkout/{ordenId}/confirm → Body: { referenciaPago } → CompraDTO (estado CONFIRMADA) y la orden pasa a PAID
+- Órdenes (/api/v1/orders):
+  - GET /api/v1/orders → OrdenDTO[] del usuario autenticado
+  - GET /api/v1/orders/admin → OrdenDTO[] de todos los usuarios (ADMIN)
+
+5. Entidades JPA nuevas
+- Orden (OrderStatus: CART, PENDING, PAID, CANCELLED), total, usuario y dirección
+- DetalleOrden (producto, cantidad, precioUnitario, total)
+- Direccion (entidad independiente ligada a User)
+- Compra (PurchaseStatus: PENDIENTE, CONFIRMADA, RECHAZADA)
+
+6. Ejemplos de respuestas
+- OrdenDTO (carrito):
+  {
+    "id": 42,
+    "status": "CART",
+    "total": 238.0,
+    "destinatario": "Juan Pérez",
+    "direccion": "Av. Siempre Viva 742",
+    "region": "Metropolitana",
+    "ciudad": "Santiago",
+    "codigoPostal": "8320000",
+    "items": [
+      {
+        "productoId": 1,
+        "nombre": "Polera Negra",
+        "precioUnitario": 119.0,
+        "cantidad": 2,
+        "total": 238.0,
+        "imagen": "https://..."
+      }
+    ]
+  }
+- CompraDTO (confirmación):
+  {
+    "id": 7,
+    "ordenId": 42,
+    "estado": "CONFIRMADA",
+    "monto": 238.0,
+    "referenciaPago": "PAY-123",
+    "fechaPago": "2025-12-15T19:20:30Z"
+  }
+
+7. Impacto en la app móvil
+- Actualizar base URLs a /api/v1
+- Flujo de compra:
+  1) Agregar productos al carrito con token JWT
+  2) Iniciar checkout enviando Direccion completa
+  3) Confirmar compra con referencia de pago
+- Asegurar perfil completo del usuario antes de usar /api/v1/cart (si faltan datos se devuelve error "datos_envio_incompletos")
+- Consumir respuestas usando los nuevos DTOs (OrdenDTO y CompraDTO)
+- Productos: enviar y leer "tipo" en JSON (no usar categoria_id)
+
+8. Referencias de código útiles
+- Seguridad: src/main/java/desarrollador/api/config/SeguridadConfig.java
+- Carrito: src/main/java/desarrollador/api/controllers/CarritoControlador.java
+- Checkout: src/main/java/desarrollador/api/controllers/CheckoutControlador.java
+- Órdenes: src/main/java/desarrollador/api/controllers/OrdenControlador.java
+- DTOs: src/main/java/desarrollador/api/dto/OrdenDTO.java, DetalleOrdenDTO.java, CompraDTO.java
+- SchemaFixer (roles en DB): src/main/java/desarrollador/api/config/SchemaFixer.java
+
+9. Checklist de migración por pantalla (app móvil)
+- Productos:
+  - Actualizar base URL a /api/v1/productos
+  - Enviar/leer el campo JSON "tipo" (no usar categoria_id)
+  - Usar "precio" como total con IVA; opcionalmente mostrar "precioOriginal"
+- Login/Registro:
+  - Actualizar a /api/v1/auth/register y /api/v1/auth/login
+  - Guardar token JWT y usar en Authorization: Bearer TOKEN
+- Perfil:
+  - Usar /api/v1/users/me (GET) y /api/v1/users/me (PATCH)
+  - Completar datos de Profile antes de acceder al carrito
+- Carrito:
+  - Usar /api/v1/cart para obtener OrdenDTO con items
+  - Agregar item: POST /api/v1/cart/items { productoId, cantidad }
+  - Actualizar cantidad: PUT /api/v1/cart/items/{productoId} { cantidad }
+  - Eliminar item: DELETE /api/v1/cart/items/{productoId}
+  - Adaptar UI a la forma de OrdenDTO/DetalleOrdenDTO
+- Checkout:
+  - Enviar Direccion completa a POST /api/v1/checkout
+  - Confirmar con POST /api/v1/checkout/{ordenId}/confirm { referenciaPago }
+  - Manejar estado de orden PENDING → PAID
+- Órdenes:
+  - Listar del usuario: GET /api/v1/orders
+  - Mostrar detalle usando OrdenDTO (incluye items y dirección)
+  - Admin (si aplica): GET /api/v1/orders/admin
+
+10. Actualizaciones recientes
+- Endpoint administrativo de usuarios:
+  - PATCH /api/v1/users/{id}: permite edición parcial de email, role y perfil por ADMIN/USER_AD.
+  - Soporta alias "USER" -> "CLIENT" para roles.
+- Configuración CORS:
+  - Añadido dominio de producción: https://web-gg-accesorios-1.onrender.com
+  - Mantiene localhost:5173 para desarrollo local.
+  - Habilitado AllowCredentials(true) y AllowedHeaders("*") para compatibilidad total.
+- Seguridad de Imágenes:
+  - Endpoint /api/v1/imagenes ahora es explícitamente público (permitAll) para evitar bloqueos 401.
+  - Mejorado manejo de errores en subida (reporta error interno si Cloudinary falla).

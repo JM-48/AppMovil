@@ -6,6 +6,7 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.Work
 import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.Description
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -45,6 +46,12 @@ fun BottomNavigationBar(
             icon = Icons.Default.List
         ),
         BottomNavItem(
+            name = "Mis Órdenes",
+            route = "mis_ordenes",
+            icon = Icons.Default.Description,
+            requiresAuth = true
+        ),
+        BottomNavItem(
             name = "Carrito",
             route = "carrito",
             icon = Icons.Default.ShoppingCart
@@ -58,13 +65,22 @@ fun BottomNavigationBar(
     )
 
     val adminItems = buildList {
-        if (allowAdminProductos) add(
-            BottomNavItem(
-                name = "Admin Productos",
-                route = "backoffice_productos",
-                icon = Icons.Default.Work
+        if (allowAdminProductos) {
+            add(
+                BottomNavItem(
+                    name = "Admin Productos",
+                    route = "backoffice_productos",
+                    icon = Icons.Default.Work
+                )
             )
-        )
+            add(
+                BottomNavItem(
+                    name = "Admin Órdenes",
+                    route = "admin_ordenes",
+                    icon = Icons.Default.Description
+                )
+            )
+        }
         if (allowAdminUsuarios) add(
             BottomNavItem(
                 name = "Admin Usuarios",

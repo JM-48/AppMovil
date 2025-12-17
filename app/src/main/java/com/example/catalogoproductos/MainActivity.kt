@@ -58,6 +58,10 @@ class MainActivity : ComponentActivity() {
                     // Base de datos y repositorios (recordados para evitar recreación en recomposición)
                     val db = remember { AppDatabase.getDatabase(applicationContext) }
                     val carritoRepository = remember { CarritoRepository(db.itemCarritoDao()) }
+                    val checkoutService = remember { com.example.catalogoproductos.network.RetrofitClient.backend.create(com.example.catalogoproductos.network.CheckoutService::class.java) }
+                    val checkoutRepository = remember { CheckoutRepository(checkoutService) }
+                    val ordenService = remember { com.example.catalogoproductos.network.RetrofitClient.backend.create(com.example.catalogoproductos.network.OrdenService::class.java) }
+                    val ordenRepository = remember { OrdenRepository(ordenService) }
                     val perfilUsuarioRepository = remember { PerfilUsuarioRepository(db.perfilUsuarioDao()) }
                     val direccionRepository = remember { DireccionRepository(db.direccionDao()) }
                     val authViewModel = viewModel<AuthViewModel>()
@@ -182,6 +186,7 @@ class MainActivity : ComponentActivity() {
                                     viewModel<CarritoViewModel>(
                                         factory = CarritoViewModel.Factory(
                                             carritoRepository,
+                                            checkoutRepository,
                                             email
                                         )
                                     )
@@ -189,6 +194,7 @@ class MainActivity : ComponentActivity() {
                                     viewModel<CarritoViewModel>(
                                         factory = CarritoViewModel.Factory(
                                             carritoRepository,
+                                            checkoutRepository,
                                             ""
                                         )
                                     )
@@ -208,6 +214,7 @@ class MainActivity : ComponentActivity() {
                                     val carritoVm = viewModel<CarritoViewModel>(
                                         factory = CarritoViewModel.Factory(
                                             carritoRepository,
+                                            checkoutRepository,
                                             userEmail
                                         )
                                     )
@@ -252,6 +259,7 @@ class MainActivity : ComponentActivity() {
                                     val carritoVm = viewModel<CarritoViewModel>(
                                         factory = CarritoViewModel.Factory(
                                             carritoRepository,
+                                            checkoutRepository,
                                             userEmail
                                         )
                                     )
@@ -291,6 +299,32 @@ class MainActivity : ComponentActivity() {
                                     BackOfficeUsuariosScreen(navController, usuariosViewModel, authViewModel)
                                 } else {
                                     authViewModel.mensaje.value = "Acceso restringido: Admin Usuarios"
+                                    navController.navigate("catalogo")
+                                }
+                            }
+                            composable("mis_ordenes") {
+                                title = "Mis Órdenes"
+                                val email = authViewModel.usuarioActual.value
+                                val token = authViewModel.token.value
+                                if (email != null && !token.isNullOrBlank()) {
+                                    val ordenesViewModel = viewModel<OrdenesViewModel>(
+                                        factory = OrdenesViewModel.Factory(ordenRepository, token)
+                                    )
+                                    MisOrdenesScreen(navController, ordenesViewModel)
+                                } else {
+                                    navController.navigate("login")
+                                }
+                            }
+                            composable("admin_ordenes") {
+                                title = "Admin Órdenes"
+                                val token = authViewModel.token.value
+                                if (authViewModel.canAccessBackofficeProductos() && !token.isNullOrBlank()) {
+                                    val adminOrdenesViewModel = viewModel<AdminOrdenesViewModel>(
+                                        factory = AdminOrdenesViewModel.Factory(ordenRepository, token)
+                                    )
+                                    AdminOrdenesScreen(navController, adminOrdenesViewModel)
+                                } else {
+                                    authViewModel.mensaje.value = "Acceso restringido: Admin Órdenes"
                                     navController.navigate("catalogo")
                                 }
                             }

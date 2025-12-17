@@ -91,7 +91,7 @@ class ProductoRepository {
         tipo: String?,
         stock: Int?,
         imagenFile: File?,
-        url: String = "https://apitest-1-95ny.onrender.com/productos"
+        url: String = "https://apitest-1-95ny.onrender.com/api/v1/productos"
     ): Producto {
         return withContext(Dispatchers.IO) {
             val boundary = "----AndroidBoundary${System.currentTimeMillis()}"
@@ -180,7 +180,7 @@ class ProductoRepository {
 
     suspend fun subirImagen(
         imagenFile: File,
-        url: String = "https://apitest-1-95ny.onrender.com/imagenes",
+        url: String = "https://apitest-1-95ny.onrender.com/api/v1/imagenes",
         baseUrlHeader: String? = null
     ): String {
         return withContext(Dispatchers.IO) {

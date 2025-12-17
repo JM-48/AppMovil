@@ -1,0 +1,186 @@
+API REST v1 — Documentación Técnica
+
+1. Autenticación
+- POST /api/v1/auth/register
+  - Body: email, password, datos de Profile, role (opcional)
+  - Respuesta: UserDto
+- POST /api/v1/auth/login
+  - Body: email, password
+  - Respuesta: { token, user: UserDto }
+
+2. Usuarios
+- GET /api/v1/users/me (JWT)
+  - Respuesta: UserDto
+- PATCH /api/v1/users/me (JWT)
+  - Body: Profile parcial/completo
+  - Respuesta: UserDto actualizado
+- GET /api/v1/users (ADMIN/USER_AD)
+  - Query: page, size, q
+  - Respuesta: Page<UserDto>
+- GET /api/v1/users/{id} (ADMIN/USER_AD)
+  - Respuesta: UserDto
+- POST /api/v1/users (ADMIN/USER_AD)
+  - Body: igual a register
+  - Respuesta: UserDto
+- PUT /api/v1/users/{id} (ADMIN/USER_AD)
+  - Body: igual a register (actualizable)
+  - Respuesta: UserDto
+- PATCH /api/v1/users/{id} (ADMIN/USER_AD)
+  - Body parcial:
+    { email?, role?, nombre?, apellido?, telefono?, direccion?, region?, ciudad?, codigoPostal? }
+  - Comportamiento: solo se actualizan los campos presentes; el perfil se fusiona sin borrar los no enviados.
+  - Validaciones:
+    - email único
+    - role en {ADMIN, USER_AD, PROD_AD, VENDEDOR, CLIENT} (alias USER aceptado y mapeado a CLIENT)
+  - Respuestas:
+    - 200: UserDto
+    - 400/422: error de validación (p.ej. email duplicado)
+- DELETE /api/v1/users/{id} (ADMIN/USER_AD)
+  - Respuesta: 204
+
+3. Productos
+- GET /api/v1/productos
+  - Respuesta: ProductoDTO[]
+- GET /api/v1/productos/{id}
+  - Respuesta: ProductoDTO
+- GET /api/v1/productos/{id}/precio
+  - Respuesta: { precioOriginal, precioConIva, ivaPorcentaje, ivaMonto }
+- POST /api/v1/productos (ADMIN/PROD_AD/VENDEDOR) multipart/form-data
+  - Campos: nombre*, precio*, tipo*, descripcion, stock, imagen (archivo)
+  - Respuesta: ProductoDTO
+- POST /api/v1/productos (ADMIN/PROD_AD/VENDEDOR) application/json
+  - Body: { nombre*, descripcion, precio*, tipo*, imagenUrl, stock }
+  - Respuesta: ProductoDTO
+- PUT /api/v1/productos/{id} (ADMIN/PROD_AD/VENDEDOR)
+  - Body parcial ({ nombre, descripcion, precio>0, tipo no vacío, imagenUrl, stock>=0 })
+  - Respuesta: ProductoDTO
+- DELETE /api/v1/productos/{id} (ADMIN/PROD_AD/VENDEDOR)
+  - Respuesta: 204
+- POST /api/v1/productos/{id}/imagen multipart/form-data
+  - Campo: imagen (archivo)
+  - Respuesta: { url }
+- POST /api/v1/productos/{id}/imagen application/json
+  - Body: { url }
+  - Respuesta: { url }
+
+4. Imágenes (Cloudinary)
+- POST /api/v1/imagenes multipart/form-data
+  - Campo: imagen
+  - Respuesta: { url }
+
+5. Carrito
+- GET /api/v1/cart (JWT)
+  - Respuesta: OrdenDTO con items (DetalleOrdenDTO[])
+  - Ejemplo:
+    {
+      "id": 42,
+      "status": "CART",
+      "total": 238.0,
+      "destinatario": "Juan Pérez",
+      "direccion": "Av. Siempre Viva 742",
+      "region": "Metropolitana",
+      "ciudad": "Santiago",
+      "codigoPostal": "8320000",
+      "items": [
+        {
+          "productoId": 1,
+          "nombre": "Polera Negra",
+          "precioUnitario": 119.0,
+          "cantidad": 2,
+          "total": 238.0,
+          "imagen": "https://..."
+        }
+      ]
+    }
+- POST /api/v1/cart/items (JWT)
+  - Body: { productoId, cantidad }
+  - Respuesta: OrdenDTO actualizado
+- PUT /api/v1/cart/items/{productoId} (JWT)
+  - Body: { cantidad }
+  - Respuesta: OrdenDTO actualizado
+- DELETE /api/v1/cart/items/{productoId} (JWT)
+  - Respuesta: OrdenDTO actualizado
+
+6. Checkout
+- POST /api/v1/checkout (JWT, Content-Type: application/json)
+  - Body:
+    {
+      "items": [
+        { "productoId": "1", "nombre": "Prod", "precioUnitario": 1000, "cantidad": 1 }
+      ],
+      "total": 1000,
+      "metodoEnvio": "domicilio"|"retiro",
+      "metodoPago": "local"|"tarjeta",
+      "destinatario": "Juan Perez",
+      "direccion": "Calle 123",
+      "region": "Región Metropolitana de Santiago",
+      "ciudad": "Santiago",
+      "codigoPostal": "0000000"
+    }
+  - Validaciones:
+    - items no vacío; cantidad >= 1; precioUnitario >= 0; nombre requerido
+    - total coincide con suma de items (tolerancia 0.01)
+    - strings requeridos: destinatario, direccion, region, ciudad, codigoPostal
+    - metodoEnvio en {domicilio, retiro}; metodoPago en {local, tarjeta}
+  - Respuestas:
+    - 201: { id, status:"PENDING", total, items, createdAt }
+    - 422: { message:"Validation error", details:[...] }
+    - 401: { message:"Unauthorized" }
+- POST /api/v1/checkout/{ordenId}/confirm (JWT)
+  - Body: { referenciaPago }
+  - Respuesta: { ordenId, estado:"PAID", referenciaPago }
+  - Errores:
+    - 403 si la orden no pertenece al usuario
+    - 404 si no existe
+    - 409 si ya está confirmada
+  - Ejemplo:
+    {
+      "id": 7,
+      "ordenId": 42,
+      "estado": "CONFIRMADA",
+      "monto": 238.0,
+      "referenciaPago": "PAY-123",
+      "fechaPago": "2025-12-15T19:20:30Z"
+    }
+
+7. Órdenes
+- GET /api/v1/orders (JWT)
+  - Respuesta: OrdenDTO[] del usuario
+- GET /api/v1/orders/admin (ADMIN/VENDEDOR)
+  - Respuesta: OrdenDTO[] de todos los usuarios
+- PATCH /api/v1/orders/{id} (ADMIN/VENDEDOR)
+  - Body parcial:
+    { status, fechaPedido (ISOString), destinatario, direccion, region, ciudad, codigoPostal }
+  - Respuestas:
+    - 200: OrdenDTO
+    - 422: { message:"Validation error", details:["status inválido"] }
+    - 409: { message:"Status change not allowed" }
+
+8. Modelos de respuesta (DTO)
+- ProductoDTO:
+  - { id, nombre, descripcion, tipo, precio, precioOriginal, imagen, stock }
+- DetalleOrdenDTO:
+  - { productoId, nombre, precioUnitario, cantidad, total, imagen }
+- OrdenDTO:
+  - { id, status, total, fechaPedido, destinatario, direccion, region, ciudad, codigoPostal, items: DetalleOrdenDTO[] }
+- CompraDTO:
+  - { id, ordenId, estado, monto, referenciaPago, fechaPago }
+
+9. Seguridad y roles
+- Roles: ADMIN, USER_AD, PROD_AD, VENDEDOR, CLIENT (alias USER aceptado y mapeado a CLIENT en altas)
+- Acceso: ver README.md sección Seguridad y Roles (v1)
+
+10. Errores
+- Formato estándar: { error, message, path, timestamp }
+- Códigos: 400 (validación), 401 (no autenticado), 403 (prohibido), 404 (no encontrado), 500 (error interno)
+
+11. Configuración de Servidor
+- CORS habilitado por defecto para:
+  - http://localhost:5173
+  - https://web-gg-accesorios-1.onrender.com
+  - Permite Credenciales (cookies/auth headers) y todos los headers (*)
+- Imágenes (Cloudinary):
+  - Endpoint: POST /api/v1/imagenes (Público, no requiere token)
+  - Retorna: { "url": "https://res.cloudinary.com/..." }
+  - Error 500: Si fallan las credenciales de Cloudinary en el servidor.
+- Timezone: UTC (por defecto en JPA/Hibernate)

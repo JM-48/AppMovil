@@ -22,7 +22,7 @@ class UsuarioRepository {
         val role: String?
     )
 
-    suspend fun listar(token: String, urlBase: String = "https://apitest-1-95ny.onrender.com/users"): List<UsuarioDto> {
+    suspend fun listar(token: String, urlBase: String = "https://apitest-1-95ny.onrender.com/api/v1/users"): List<UsuarioDto> {
         return withContext(Dispatchers.IO) {
             val connection = (URL(urlBase).openConnection() as HttpURLConnection)
             try {
@@ -87,7 +87,7 @@ class UsuarioRepository {
         }
     }
 
-    suspend fun crear(token: String, body: Map<String, Any?>, urlBase: String = "https://apitest-1-95ny.onrender.com/users"): UsuarioDto {
+    suspend fun crear(token: String, body: Map<String, Any?>, urlBase: String = "https://apitest-1-95ny.onrender.com/api/v1/users"): UsuarioDto {
         return withContext(Dispatchers.IO) {
             val url = URL(urlBase)
             val connection = (url.openConnection() as HttpURLConnection)
@@ -149,7 +149,7 @@ class UsuarioRepository {
         }
     }
 
-    suspend fun eliminar(token: String, id: Int, urlBase: String = "https://apitest-1-95ny.onrender.com/users") {
+    suspend fun eliminar(token: String, id: Int, urlBase: String = "https://apitest-1-95ny.onrender.com/api/v1/users") {
         withContext(Dispatchers.IO) {
             val url = URL("$urlBase/$id")
             val connection = (url.openConnection() as HttpURLConnection)
