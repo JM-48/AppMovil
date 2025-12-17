@@ -11,10 +11,11 @@ Aplicación móvil Android (Jetpack Compose + Kotlin) para explorar un catálogo
 - Carrito de compras con total acumulado y flujo de checkout: dirección de envío, confirmación y boleta con desglose de IVA solo después de la compra.
 - Perfil de usuario: sincroniza datos desde `GET /users/me` cuando hay token, editable localmente.
 - Administración basada en rol:
-  - `ADMIN`: acceso a productos y usuarios.
-  - `USER_AD`: solo usuarios.
-  - `PROD_AD`: solo productos.
-  - `CLIENT`: uso general, sin acceso a backoffice.
+  - `ADMIN`: acceso total (usuarios, productos, órdenes). Vista simplificada de cliente (solo Perfil).
+  - `USER_AD`: gestión de usuarios.
+  - `PROD_AD`: gestión de productos.
+  - `VENDEDOR`: gestión de órdenes (ver, cambiar estado, editar datos de envío).
+  - `CLIENT`: uso general (catálogo, carrito, noticias, mis órdenes), sin acceso a backoffice.
 
 ## Arquitectura
 - MVVM con `ViewModel` + `StateFlow` para estado reactivo.
@@ -33,7 +34,7 @@ Aplicación móvil Android (Jetpack Compose + Kotlin) para explorar un catálogo
 - Ejecutar en celular por medio de apk
 
 ## Endpoints
-- Base: `https://apitest-1-95ny.onrender.com/`
+- Base: `https://apitest-1-95ny.onrender.com/api/v1/`
 
 - Públicos:
   - `GET /productos` → lista de productos.
@@ -47,7 +48,7 @@ Aplicación móvil Android (Jetpack Compose + Kotlin) para explorar un catálogo
 
 - Usuarios (administración; `ADMIN`, `USER_AD`):
   - `GET /users` → listar usuarios (Bearer).
-  - `POST /users` → crear usuario (Bearer).
+  - `POST /users` → crear usuario (incluye rol `VENDEDOR`) (Bearer).
   - `PUT /users/{id}` → actualizar usuario (Bearer).
   - `DELETE /users/{id}` → eliminar usuario (Bearer).
 
@@ -55,6 +56,10 @@ Aplicación móvil Android (Jetpack Compose + Kotlin) para explorar un catálogo
   - `POST /productos` → crear producto (Bearer).
   - `PUT /productos/{id}` → actualizar producto (Bearer).
   - `DELETE /productos/{id}` → eliminar producto (Bearer).
+
+- Órdenes (administración; `ADMIN`, `VENDEDOR`):
+  - `GET /ordenes` → listar todas las órdenes.
+  - `PATCH /ordenes/{id}` → actualizar estado y datos de envío (Bearer).
 
 - Subir imágenes:
   - `POST /imagenes` (multipart/form-data) → devuelve `{"url": "https://..."}`.
@@ -86,16 +91,16 @@ Aplicación móvil Android (Jetpack Compose + Kotlin) para explorar un catálogo
   Authorization: Bearer <TOKEN>
   Content-Type: application/json
   {
-    "email": "nuevo@example.com",
+    "email": "vendedor@example.com",
     "password": "123456",
     "nombre": "Juan",
     "apellido": "Pérez",
     "telefono": "987654321",
-    "direccion": "Calle 123, Dpto 45",
+    "direccion": "Calle 123",
     "ciudad": "Valparaíso",
     "region": "Valparaíso",
     "codigoPostal": "12345",
-    "role": "CLIENT"
+    "role": "VENDEDOR"
   }
   ```
 
@@ -114,17 +119,10 @@ Aplicación móvil Android (Jetpack Compose + Kotlin) para explorar un catálogo
   }
   ```
 
-- Desglose de Precio:
-  ```
-  GET /productos/123/precio
-  // Respuesta:
-  // { "precioOriginal": 10000.0, "precioConIva": 11900.0, "ivaPorcentaje": 0.19, "ivaMonto": 1900.0 }
-  ```
-
 ## Pantallas
 - Login/Registro:
-  - Validaciones en vivo; contraseña oculta”; Enter confirma.
-  - Persistencia de token y rol en DataStore. Manejo de errores: `401` → “Token requerido”, `403` → “Acceso denegado”.
+  - Validaciones en vivo; contraseña oculta; Enter confirma.
+  - Persistencia de token y rol en DataStore.
 
 - Catálogo:
   - Búsqueda por nombre y categoría. Lista y detalle con imágenes y precio en CLP.
@@ -135,9 +133,8 @@ Aplicación móvil Android (Jetpack Compose + Kotlin) para explorar un catálogo
   - Actualización de cantidades y eliminación de items.
 
 - Dirección:
-  - Formulario de envío con validaciones (calle, número, ciudad, provincia, código postal, teléfono).
-  - Si el usuario no tiene dirección predeterminada, la primera guardada se marca como default.
-  - Se removió el checkbox “Establecer como dirección predeterminada” en la compra.
+  - Formulario de envío con validaciones.
+  - Gestión de direcciones predeterminadas.
 
 - Confirmación de Compra:
   - Boleta con desglose: `precio sin IVA`, `IVA`, `precio final con IVA` solo después de la compra.
@@ -145,18 +142,28 @@ Aplicación móvil Android (Jetpack Compose + Kotlin) para explorar un catálogo
 - Perfil:
   - Carga `GET /users/me` y prellena datos; `PATCH /users/me` envía solo campos cambiados.
 
-- BackOffice:
-  - Control por rol. `ADMIN` ve y gestiona usuarios y productos. `USER_AD` solo usuarios. `PROD_AD` solo productos. `CLIENT` no accede.
-  - CRUD de productos: crear/editar/eliminar con JWT.
+- BackOffice Productos (`ADMIN`, `PROD_AD`):
+  - CRUD de productos.
+  - Subida de imágenes vía **Cámara** o **Galería**.
+  - Soporte para descripciones en **Markdown** y **HTML**.
+
+- Administración de Usuarios (`ADMIN`, `USER_AD`):
+  - Creación y edición de usuarios, incluyendo asignación de roles (`ADMIN`, `USER_AD`, `PROD_AD`, `VENDEDOR`, `CLIENT`).
+
+- Administración de Órdenes (`ADMIN`, `VENDEDOR`):
+  - Listado de órdenes de todos los usuarios.
+  - Edición de estado: **Pendiente** (`PENDING`), **Recibido** (`PAID`), **Rechazada** (`CANCELLED`).
+  - Edición de datos de envío (Dirección, Ciudad, Región, Destinatario).
+  - Visualización localizada (Español) de estados, manteniendo compatibilidad con backend (Inglés).
 
 ## Lógica de Negocio
-- Roles válidos: `ADMIN`, `USER_AD`, `PROD_AD`, `CLIENT`. Si llega `USER`, se normaliza a `CLIENT`.
+- Roles válidos: `ADMIN`, `USER_AD`, `PROD_AD`, `VENDEDOR`, `CLIENT`.
 - Rutas protegidas requieren JWT. UI oculta acciones no permitidas según rol.
-- Precios:
-  - `ProductoDTO.precio` se interpreta con IVA incluido (19%).
-  - Desglose oficial vía `GET /productos/{id}/precio`.
-  - Formateo en CLP sin decimales y validaciones por substring en pruebas.
+- Precios: `ProductoDTO.precio` se interpreta con IVA incluido (19%).
+- Estados de Orden:
+  - Backend: `PENDING`, `PAID`, `CANCELLED`.
+  - Frontend (Visual): `Pendiente`, `Recibido`, `Rechazada`.
 
 ## Pruebas
 - Comando: `gradlew test`
-- Cobertura: 24 pruebas, 0 fallos (validaciones de formularios, carrito, catálogo, autenticación, markdown y formato de moneda).
+- Cobertura: Validaciones de formularios, carrito, catálogo, autenticación, markdown y formato de moneda.
